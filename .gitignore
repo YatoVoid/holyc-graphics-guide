@@ -1,0 +1,4 @@
+build/
+site/
+*.ppm
+.DS_Store

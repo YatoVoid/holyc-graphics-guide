@@ -1,0 +1,38 @@
+name: Examples
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "scripts/**"
+      - ".github/workflows/examples.yml"
+  pull_request:
+    paths:
+      - "examples/**"
+      - "scripts/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build tools and libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake libsdl2-dev libgl-dev
+
+      - name: Build hcc
+        run: ./scripts/build-linux.sh --install-hcc --prefix "$HOME/.local"
+
+      - name: Check examples
+        # No GPU on the runner, so the OpenGL demo is built but not run.
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          ./scripts/check.sh --no-gl

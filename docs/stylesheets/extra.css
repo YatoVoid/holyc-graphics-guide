@@ -1,0 +1,23 @@
+.shots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.shots p {
+  display: contents;
+}
+
+.shots img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 0.2rem;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 30em) {
+  .shots {
+    grid-template-columns: 1fr;
+  }
+}
