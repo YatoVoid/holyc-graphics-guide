@@ -76,7 +76,7 @@ make unit-test
 hcc doesn't read any environment variables you need to set. Two things matter:
 
 - **`PATH`** must include `<prefix>/bin` so your shell finds `hcc`.
-- **`cc`** must be on `PATH` at compile time. hcc calls it to assemble and link. Programs built with hcc don't need hcc or `libtos` at runtime, because `libtos` is linked statically. They only need the shared C libraries they `#link` (SDL2, GL).
+- **`cc`** must be on `PATH` at compile time. hcc calls it to assemble and link. Programs built with hcc don't need hcc or `libtos` at runtime, because `libtos` is linked statically. They only need the shared C libraries they `#link` (SDL2, SDL2_image, GL).
 
 ## Updating
 

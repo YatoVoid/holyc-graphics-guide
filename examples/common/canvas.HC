@@ -175,3 +175,73 @@ Bool CanvasSavePpm(Canvas *c, U8 *path)
   Free(header);
   return ok;
 }
+
+// Skips whitespace and '#' comments, then reads a decimal number.
+// Returns -1 if there isn't one.
+I64 PpmNumber(U8 *file, I64 size, I64 *pos)
+{
+  while (*pos < size) {
+    U8 ch = file[*pos];
+    if (ch == '#') {
+      while (*pos < size && file[*pos] != '\n')
+        *pos += 1;
+    } else if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+      *pos += 1;
+    } else {
+      break;
+    }
+  }
+  I64 value = -1;
+  while (*pos < size && file[*pos] >= '0' && file[*pos] <= '9') {
+    if (value < 0)
+      value = 0;
+    value = value * 10 + file[*pos] - '0';
+    *pos += 1;
+  }
+  return value;
+}
+
+// Reads a binary PPM (P6) with 8-bit channels: what CanvasSavePpm writes
+// and what `magick in.png out.ppm` produces. Initialises `c`; free it with
+// CanvasFree. Returns FALSE for a missing file or any other kind of PPM.
+Bool CanvasLoadPpm(Canvas *c, U8 *path)
+{
+  I64 size = 0;
+  U8 *file = FileRead(path, &size);
+  if (!file)
+    return FALSE;
+
+  Bool ok = FALSE;
+  I64 pos = 2;
+  if (size > 2 && file[0] == 'P' && file[1] == '6') {
+    I64 w = PpmNumber(file, size, &pos);
+    I64 h = PpmNumber(file, size, &pos);
+    I64 max = PpmNumber(file, size, &pos);
+    // Exactly one whitespace byte separates the header from the pixels.
+    pos++;
+    if (w > 0 && h > 0 && max == 255 && pos + w * h * 3 <= size && CanvasInit(c, w, h)) {
+      U8 *in = file + pos;
+      for (I64 i = 0; i < w * h; i++) {
+        c->pixels[i] = Rgb(in[0], in[1], in[2]);
+        in += 3;
+      }
+      ok = TRUE;
+    }
+  }
+  Free(file);
+  return ok;
+}
+
+// Copies `src` onto `dst` with its top-left corner at (x, y). Pixels with
+// alpha below half are skipped, so a PNG with a transparent background
+// draws as a sprite. Canvas drawing functions always use full alpha.
+U0 CanvasBlit(Canvas *dst, Canvas *src, I64 x, I64 y)
+{
+  for (I64 sy = 0; sy < src->height; sy++) {
+    for (I64 sx = 0; sx < src->width; sx++) {
+      U32 p = src->pixels[sy * src->width + sx];
+      if ((p >> 24) >= 0x80)
+        CanvasPixel(dst, x + sx, y + sy, p);
+    }
+  }
+}

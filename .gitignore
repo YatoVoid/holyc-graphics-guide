@@ -2,3 +2,4 @@ build/
 site/
 *.ppm
 .DS_Store
+!examples/image-load/bricks.ppm

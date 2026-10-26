@@ -4,7 +4,9 @@
 
 #link <SDL2>
 
+#define SDL_INIT_AUDIO 0x00000010
 #define SDL_INIT_VIDEO 0x00000020
+#define SDL_INIT_GAMECONTROLLER 0x00002000
 
 #define SDL_WINDOWPOS_CENTERED 0x2FFF0000
 #define SDL_WINDOW_OPENGL      0x00000002
@@ -21,6 +23,9 @@
 
 #define SDL_BUTTON_LMASK 1
 
+// AUDIO_S16LSB. Every platform hcc targets is little-endian.
+#define AUDIO_S16SYS 0x8010
+
 #define SDL_GL_DOUBLEBUFFER          5
 #define SDL_GL_DEPTH_SIZE            6
 #define SDL_GL_CONTEXT_MAJOR_VERSION 17
@@ -29,6 +34,33 @@
 #define SDL_GL_CONTEXT_PROFILE_MASK  21
 #define SDL_GL_CONTEXT_PROFILE_CORE  1
 #define SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG 2
+
+// SDL_GameControllerAxis. Sticks run from -32768 to 32767, with up and
+// left negative; triggers from 0 to 32767.
+#define PAD_AXIS_LEFTX        0
+#define PAD_AXIS_LEFTY        1
+#define PAD_AXIS_RIGHTX       2
+#define PAD_AXIS_RIGHTY       3
+#define PAD_AXIS_TRIGGERLEFT  4
+#define PAD_AXIS_TRIGGERRIGHT 5
+
+// SDL_GameControllerButton. Named by position on an Xbox pad: A is the
+// bottom face button whatever the controller prints on it.
+#define PAD_A              0
+#define PAD_B              1
+#define PAD_X              2
+#define PAD_Y              3
+#define PAD_BACK           4
+#define PAD_GUIDE          5
+#define PAD_START          6
+#define PAD_LEFTSTICK      7
+#define PAD_RIGHTSTICK     8
+#define PAD_LEFTSHOULDER   9
+#define PAD_RIGHTSHOULDER  10
+#define PAD_DPAD_UP        11
+#define PAD_DPAD_DOWN      12
+#define PAD_DPAD_LEFT      13
+#define PAD_DPAD_RIGHT     14
 
 // Scancodes are physical key positions, not characters.
 #define SC_A      4
@@ -46,6 +78,34 @@
 class SdlRect
 {
   I32 x, y, w, h;
+};
+
+// The start of SDL_Surface, which is all a program needs to read: size,
+// row pitch in bytes, and the pixels. The padding fields make the C
+// alignment explicit. Only ever use it through a pointer SDL returned.
+class SdlSurface
+{
+  U32 flags;
+  U32 pad0;
+  U0 *format;
+  I32 w, h;
+  I32 pitch;
+  I32 pad1;
+  U0 *pixels;
+};
+
+// Matches SDL_AudioSpec. Leave callback NULL to use SDL_QueueAudio.
+class SdlAudioSpec
+{
+  I32 freq;
+  U16 format;
+  U8 channels;
+  U8 silence;
+  U16 samples;
+  U16 padding;
+  U32 size;
+  U0 *callback;
+  U0 *userdata;
 };
 
 extern "c" I32 SDL_Init(U32 flags);
@@ -68,10 +128,31 @@ extern "c" U0 SDL_DestroyTexture(U0 *texture);
 extern "c" I32 SDL_UpdateTexture(U0 *texture, SdlRect *rect, U0 *pixels, I32 pitch);
 extern "c" I32 SDL_RenderCopy(U0 *renderer, U0 *texture, SdlRect *src, SdlRect *dst);
 
+extern "c" SdlSurface *SDL_ConvertSurfaceFormat(SdlSurface *src, U32 format, U32 flags);
+extern "c" U0 SDL_FreeSurface(SdlSurface *surface);
+
 extern "c" I32 SDL_PollEvent(U0 *event);
 extern "c" U8 *SDL_GetKeyboardState(I32 *numkeys);
 extern "c" U32 SDL_GetMouseState(I32 *x, I32 *y);
 extern "c" U32 SDL_GetTicks();
+extern "c" U0 SDL_Delay(U32 ms);
+
+extern "c" I32 SDL_NumJoysticks();
+extern "c" I32 SDL_IsGameController(I32 joystick_index);
+extern "c" U0 *SDL_GameControllerOpen(I32 joystick_index);
+extern "c" U0 SDL_GameControllerClose(U0 *pad);
+extern "c" I32 SDL_GameControllerGetAttached(U0 *pad);
+extern "c" U8 *SDL_GameControllerName(U0 *pad);
+extern "c" U8 SDL_GameControllerGetButton(U0 *pad, I32 button);
+extern "c" I16 SDL_GameControllerGetAxis(U0 *pad, I32 axis);
+
+extern "c" U32 SDL_OpenAudioDevice(U8 *device, I32 iscapture, SdlAudioSpec *desired,
+                                   SdlAudioSpec *obtained, I32 allowed_changes);
+extern "c" U0 SDL_PauseAudioDevice(U32 dev, I32 pause_on);
+extern "c" I32 SDL_QueueAudio(U32 dev, U0 *data, U32 len);
+extern "c" U32 SDL_GetQueuedAudioSize(U32 dev);
+extern "c" U0 SDL_ClearQueuedAudio(U32 dev);
+extern "c" U0 SDL_CloseAudioDevice(U32 dev);
 
 extern "c" I32 SDL_GL_SetAttribute(I32 attr, I32 value);
 extern "c" U0 *SDL_GL_CreateContext(U0 *window);

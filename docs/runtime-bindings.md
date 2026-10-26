@@ -91,7 +91,7 @@ On Windows, C programs need a loader such as GLAD or GLEW to find OpenGL functio
 
 ## Callbacks
 
-Passing a HolyC function to C as a callback (for example `SDL_AddEventWatch` or audio callbacks) means taking a function's address. Taking the address of an `extern "c"` function fails when linked as PIE. Taking the address of a HolyC function and handing it to C hasn't been tested by this guide, so prefer polling APIs (`SDL_PollEvent`, `SDL_QueueAudio`) that avoid callbacks.
+Passing a HolyC function to C as a callback (for example `SDL_AddEventWatch` or audio callbacks) means taking a function's address. Taking the address of an `extern "c"` function fails when linked as PIE. Taking the address of a HolyC function and handing it to C hasn't been tested by this guide, so prefer polling APIs (`SDL_PollEvent`, `SDL_QueueAudio`) that avoid callbacks. [Sound](audio.md) uses `SDL_QueueAudio`.
 
 ## Writing bindings for a new library
 

@@ -3,7 +3,7 @@
 #   - headless programs must exit 0 and produce the expected output
 #   - window programs run for a few seconds on SDL's offscreen driver and
 #     must still be running when the timeout stops them (no crash on start)
-# Pass --no-gl to skip running the OpenGL demo, which needs a GPU context.
+# Pass --no-gl to skip running the OpenGL programs, which need a GPU context.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,6 +17,35 @@ RUN_GL=1
 failures=0
 pass() { printf '  ok    %s\n' "$1"; }
 fail() { printf '  FAIL  %s\n' "$1"; failures=$((failures + 1)); }
+
+# run_for SECONDS COMMAND...: like GNU timeout, including exit status 124
+# when the time runs out. macOS has no timeout unless coreutils is
+# installed (as gtimeout), so fall back to a background watcher.
+run_for() {
+  local secs="$1"
+  shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$secs" "$@"
+    return
+  fi
+  if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "$secs" "$@"
+    return
+  fi
+  "$@" &
+  local pid=$!
+  (sleep "$secs" && touch "$TMP/timed-out.$pid" && kill -TERM "$pid" 2>/dev/null) &
+  local watcher=$!
+  wait "$pid"
+  local status=$?
+  kill "$watcher" 2>/dev/null
+  wait "$watcher" 2>/dev/null
+  if [ -e "$TMP/timed-out.$pid" ]; then
+    rm -f "$TMP/timed-out.$pid"
+    return 124
+  fi
+  return "$status"
+}
 
 build_script="$ROOT/scripts/build-linux.sh"
 [ "$(uname -s)" = "Darwin" ] && build_script="$ROOT/scripts/build-macos.sh"
@@ -51,17 +80,49 @@ else
   fail "draw writes a 320x200 image"
 fi
 
+if "$BIN/text" "$TMP/text.ppm" >/dev/null && check_ppm "$TMP/text.ppm" 320 200; then
+  pass "text writes a 320x200 image"
+else
+  fail "text writes a 320x200 image"
+fi
+
+if (cd "$ROOT/examples/image-load" && "$BIN/load" "$TMP/load.ppm" >/dev/null) && check_ppm "$TMP/load.ppm" 240 160; then
+  pass "load reads a PPM and a PNG"
+else
+  fail "load reads a PPM and a PNG"
+fi
+
+if "$BIN/tilemap" --ppm "$TMP/tilemap.ppm" >/dev/null && check_ppm "$TMP/tilemap.ppm" 240 160; then
+  pass "tilemap plays two seconds without a window"
+else
+  fail "tilemap plays two seconds without a window"
+fi
+
+if "$BIN/bounce" --ppm "$TMP/bounce.ppm" >/dev/null && check_ppm "$TMP/bounce.ppm" 640 480; then
+  pass "bounce runs 20000 steps to a file"
+else
+  fail "bounce runs 20000 steps to a file"
+fi
+
 if "$BIN/cube" --ppm "$TMP/cube.ppm" >/dev/null && check_ppm "$TMP/cube.ppm" 320 200; then
   pass "cube renders a frame to a file"
 else
   fail "cube renders a frame to a file"
 fi
 
+# The dummy driver plays the queue at real-time speed into nothing, so
+# this also checks that the program waits for its sounds and then exits.
+if SDL_AUDIODRIVER=dummy run_for 10 "$BIN/beep" 2>&1 | grep -q '^done$'; then
+  pass "beep plays its queue and exits"
+else
+  fail "beep plays its queue and exits"
+fi
+
 # A window program that is still running after 3 seconds started fine.
 check_window() {
   local name="$1" dir="$2"
   local status
-  (cd "$ROOT/examples/$dir" && SDL_VIDEODRIVER=offscreen timeout 3 "$BIN/$name" >"$TMP/$name.log" 2>&1)
+  (cd "$ROOT/examples/$dir" && SDL_VIDEODRIVER=offscreen run_for 3 "$BIN/$name" >"$TMP/$name.log" 2>&1)
   status=$?
   if [ "$status" -eq 124 ]; then
     pass "$name opens and keeps running"
@@ -72,12 +133,16 @@ check_window() {
 }
 
 check_window sprite sprite-demo
+check_window tilemap tilemap
+check_window pad gamepad
+check_window bounce templeos-bounce
 check_window cube simple-3d
 check_window sdl_example sdl-demo
 if [ "$RUN_GL" = 1 ]; then
   check_window opengl_example opengl-demo
+  check_window texture gl-texture
 else
-  echo "  skip  opengl_example (--no-gl)"
+  echo "  skip  opengl_example, texture (--no-gl)"
 fi
 
 if [ "$failures" -gt 0 ]; then

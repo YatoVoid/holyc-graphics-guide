@@ -10,13 +10,20 @@ holyc-graphics-guide/
 ├── docs/                      this site
 │   └── media/                 screenshots, all taken from the examples
 ├── examples/
-│   ├── common/                shared HolyC: canvas, SDL2 and GL declarations
+│   ├── common/                shared HolyC: canvas, font, audio, SDL2, SDL2_image and GL declarations
 │   ├── hello-world/
 │   ├── draw-basic/
+│   ├── font-text/
+│   ├── image-load/
 │   ├── sprite-demo/
+│   ├── tilemap/
+│   ├── audio/
+│   ├── gamepad/
+│   ├── templeos-bounce/
 │   ├── simple-3d/
 │   ├── sdl-demo/
-│   └── opengl-demo/
+│   ├── opengl-demo/
+│   └── gl-texture/
 ├── scripts/
 │   ├── build-linux.sh         build examples; --install-hcc builds hcc too
 │   ├── build-macos.sh
@@ -71,6 +78,7 @@ Some rules of thumb:
 
 - **Order is dependency order.** A file can only use what's included above it, unless you add prototypes.
 - **Keep platform code at the bottom of the stack.** Only `platform/` and the renderer should call SDL or GL. Game logic that never touches SDL can be tested headlessly, which matters because you can't unit-test a window in CI.
+- **Free a level all at once.** Allocating everything a level owns from one arena and resetting it on level change removes per-object `Free` calls. See [Memory arenas](memory-arenas.md).
 - **Prefix names by module** (`Canvas*`, `Player*`, `Level*`). There are no namespaces, and everything ends up in one translation unit.
 - **Write a headless test entry point.** A second `tests/world_test.HC` that includes your world code (but no renderer) and drives it with fake input catches logic bugs fast. Ossuary's tests work this way.
 

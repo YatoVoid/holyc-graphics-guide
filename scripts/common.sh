@@ -91,9 +91,16 @@ build_examples() {
   echo "building with $(hcc --version 2>&1 | head -n 1)"
   build_one hello-world hello.HC hello
   build_one draw-basic draw.HC draw
+  build_one font-text text.HC text
+  build_one image-load load.HC load
   build_one sprite-demo sprite.HC sprite
+  build_one tilemap tilemap.HC tilemap
+  build_one audio beep.HC beep
+  build_one gamepad pad.HC pad
+  build_one templeos-bounce bounce.HC bounce
   build_one simple-3d cube.HC cube
   build_one sdl-demo sdl_example.HC sdl_example
   build_one opengl-demo opengl_example.HC opengl_example ${gl_flags[@]+"${gl_flags[@]}"}
+  build_one gl-texture texture.HC texture ${gl_flags[@]+"${gl_flags[@]}"}
   echo "done"
 }

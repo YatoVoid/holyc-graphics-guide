@@ -34,7 +34,7 @@
 ## Linking
 
 **`cannot find -lSDL2`**
-: The SDL2 development package isn't installed. A runtime-only package isn't enough: the linker needs `libSDL2.so`. Install `libsdl2-dev` (Debian/Ubuntu) or `SDL2-devel` (Fedora), or run `brew install sdl2` on macOS.
+: The SDL2 development package isn't installed. A runtime-only package isn't enough: the linker needs `libSDL2.so`. Install `libsdl2-dev` (Debian/Ubuntu) or `SDL2-devel` (Fedora), or run `brew install sdl2` on macOS. For `-lSDL2_image`, the packages are `libsdl2-image-dev`, `SDL2_image-devel`, `sdl2_image` (Arch) and `sdl2_image` (Homebrew).
 
 **`cannot find -lGL`**
 : Install `libgl-dev` (Debian/Ubuntu) or `mesa-libGL-devel` (Fedora).

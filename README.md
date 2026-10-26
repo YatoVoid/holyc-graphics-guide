@@ -22,7 +22,7 @@ git clone https://github.com/YatoVoid/holyc-graphics-guide.git
 cd holyc-graphics-guide
 
 # Debian/Ubuntu dependencies. Other systems: see docs/installation.md
-sudo apt install build-essential cmake git libsdl2-dev libgl-dev
+sudo apt install build-essential cmake git libsdl2-dev libsdl2-image-dev libgl-dev
 
 ./scripts/build-linux.sh --install-hcc    # builds hcc into ~/.local, then the examples
 export PATH="$HOME/.local/bin:$PATH"
@@ -37,7 +37,7 @@ macOS: use `./scripts/build-macos.sh`. Windows: run `.\scripts\build-windows.ps1
 
 | Path | Contents |
 |---|---|
-| [`examples/`](examples/) | six programs, from hello world to an OpenGL cube, plus shared HolyC in `common/` |
+| [`examples/`](examples/) | thirteen programs, from hello world to an OpenGL cube, plus shared HolyC in `common/` |
 | [`docs/`](docs/) | the documentation site (MkDocs Material) |
 | [`scripts/`](scripts/) | build scripts for Linux, macOS and WSL2, and `check.sh` |
 
@@ -45,10 +45,17 @@ macOS: use `./scripts/build-macos.sh`. Windows: run `.\scripts\build-windows.ps1
 |---|---|
 | `hello-world` | HolyC syntax: printing, classes, default arguments |
 | `draw-basic` | a software framebuffer: lines, rectangles, circles, triangles, saved as an image |
+| `font-text` | a 5x7 bitmap font stored as ASCII art, drawn into the canvas at any scale |
+| `image-load` | a PPM reader in HolyC and a PNG through SDL2_image, drawn with transparency |
 | `sprite-demo` | a small game: window, frame loop, sprites, keyboard and mouse, collision |
+| `tilemap` | a scrolling platformer level stored as a string grid: camera, gravity, tile collision |
+| `audio` | square-wave beeps queued with `SDL_QueueAudio`, no callbacks |
+| `gamepad` | SDL GameController: sticks, triggers and buttons drawn live, hotplug |
+| `templeos-bounce` | TempleOS's `Bounce.HC` demo ported to hcc, with every change explained |
 | `simple-3d` | 3D on the CPU: projection, back-face culling, lighting, painter's algorithm |
 | `sdl-demo` | SDL's 2D renderer driven directly from HolyC |
 | `opengl-demo` | OpenGL 3.3 core: shaders, buffers, matrices, depth testing |
+| `gl-texture` | a canvas uploaded as a GL texture every frame and drawn on a quad |
 
 ## How the graphics stack works
 

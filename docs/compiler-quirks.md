@@ -45,6 +45,46 @@ if (speed > 0.01)
   moving = TRUE;
 ```
 
+## Pointers and wide integers in `&&` and `||`
+
+```holyc
+U8 *a = MAlloc(16), *b = MAlloc(16);
+if (a && b)            // FALSE whenever b's address ends in 0x00
+  Use(a, b);
+return tiles && name;  // same, and the result isn't 0 or 1 either
+```
+
+`&&` and `||` test their left operand correctly, but only look at the **low byte** of the right operand. A pointer or `I64` on the right whose low byte is zero counts as false: `0 || 0x100` is false, and so is `5 && 0x200`. Allocations are often 16-byte aligned, so `a && b` on two valid pointers fails roughly one time in sixteen. The value of `a && b` is the right operand's low byte, not 1.
+
+Comparisons, `!x`, `Bool` and other one-byte values are all safe on the right, since they're already 0 or 1.
+
+**Workaround:** compare explicitly, or test with `!`.
+
+```holyc
+if (a != NULL && b != NULL)
+  Use(a, b);
+if (!tiles || !name)
+  return FALSE;
+return TRUE;
+```
+
+## Unsigned 64-bit shifts and conversions
+
+```holyc
+U64 u = 0x8000000000000000;
+U64 s = u >> 63;   // -1, not 1
+F64 f = u;         // -9223372036854775808.0
+```
+
+`>>` on a `U64` copies the sign bit like a signed shift, and converting a `U64` to `F64` treats it as signed. Both only show up when the top bit is set, which is exactly what the output of a random number generator or a hash often looks like. `U32` and smaller types are fine.
+
+**Workaround:** mask off the bits the shift may have filled.
+
+```holyc
+U64 top53 = (seed >> 11) & 0x1FFFFFFFFFFFFF;
+F64 f = top53;     // always positive now
+```
+
 ## Bool && float comparison
 
 ```holyc
@@ -72,6 +112,24 @@ Vec3 V3Add(Vec3 a, Vec3 b);   // crashes for a 3 x F32 (12-byte) class
 
 ```holyc
 U0 V3Add(Vec3 *out, Vec3 *a, Vec3 *b);
+```
+
+## Call results into a parameter's fields
+
+```holyc
+U0 SetCamera(Game *g, I64 x)
+{
+  g->cam_x = MaxI64(0, x);   // segfault
+}
+```
+
+Assigning the result of a call that takes arguments straight into a field of a pointer **parameter** can crash. hcc keeps the parameter in the register it arrived in, the call's own arguments overwrite that register, and the store goes to a garbage address. It happens under `-jit` too. Calls with no arguments are fine, and so are pointers held in locals (`Player *p = &g->player; p->x = MaxI64(...)`).
+
+**Workaround:** put the result in a local first.
+
+```holyc
+x = MaxI64(0, x);
+g->cam_x = x;
 ```
 
 ## One global per declaration

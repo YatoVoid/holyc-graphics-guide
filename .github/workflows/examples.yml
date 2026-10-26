@@ -26,13 +26,31 @@ jobs:
       - name: Install build tools and libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake libsdl2-dev libgl-dev
+          sudo apt-get install -y --no-install-recommends cmake libsdl2-dev libsdl2-image-dev libgl-dev
 
       - name: Build hcc
         run: ./scripts/build-linux.sh --install-hcc --prefix "$HOME/.local"
 
       - name: Check examples
-        # No GPU on the runner, so the OpenGL demo is built but not run.
+        # No GPU on the runner, so the OpenGL programs are built but not run.
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          ./scripts/check.sh --no-gl
+
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install libraries
+        run: brew install sdl2 sdl2_image
+
+      - name: Build hcc
+        run: ./scripts/build-macos.sh --install-hcc --prefix "$HOME/.local"
+
+      - name: Check examples
+        # As on Linux, the OpenGL programs are built but not run.
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           ./scripts/check.sh --no-gl

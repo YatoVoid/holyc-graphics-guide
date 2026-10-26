@@ -16,11 +16,15 @@ nav:
       - Graphics and rendering: graphics.md
       - Sprites and 2D: sprites.md
       - 3D overview: 3d-overview.md
+      - Sound: audio.md
       - Runtime bindings: runtime-bindings.md
   - Reference:
       - Example programs: examples.md
       - Project layout: project-structure.md
+      - Memory arenas: memory-arenas.md
+      - Porting from TempleOS: templeos-porting.md
       - Compiler quirks: compiler-quirks.md
+      - Profiling: profiling.md
       - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
   - Roadmap: roadmap.md

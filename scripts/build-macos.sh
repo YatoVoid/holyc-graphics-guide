@@ -14,8 +14,8 @@ if [ "$INSTALL_HCC" = 1 ]; then
 fi
 
 brew_lib="$(brew --prefix 2>/dev/null || echo /opt/homebrew)/lib"
-if ! can_link -L"$brew_lib" -lSDL2; then
-  echo "warning: cc can't link against SDL2 (brew install sdl2). Only hello-world and draw-basic will build." >&2
+if ! can_link -L"$brew_lib" -lSDL2 -lSDL2_image; then
+  echo "warning: cc can't link against SDL2 and SDL2_image (brew install sdl2 sdl2_image). Only hello-world, draw-basic and font-text will build." >&2
 fi
 
 # OpenGL lives in a framework on macOS, which #link can't express.

@@ -15,7 +15,7 @@ Every image on this site comes from the example programs in [`examples/`](https:
 
 ## What this is, and what it isn't
 
-**It is** a guide and a starter kit: six small programs that compile, a few hundred lines of reusable HolyC (a software framebuffer, SDL2 and OpenGL declarations), and docs explaining how they fit together.
+**It is** a guide and a starter kit: thirteen small programs that compile, a few hundred lines of reusable HolyC (a software framebuffer, SDL2 and OpenGL declarations), and docs explaining how they fit together.
 
 **It isn't** an engine. hcc is a compiler. It gives you the HolyC language and a small runtime library (strings, memory, files, hash tables), but no windowing, input, audio or graphics. For those you call native C libraries from HolyC, which is most of what this guide teaches.
 

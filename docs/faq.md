@@ -16,10 +16,10 @@
 : OpenGL 3.3 core runs on Linux, macOS and WSL2, needs no loader on Linux and macOS, and gets a cube on screen in a few hundred lines. Vulkan would need several times the binding work. Apple has deprecated OpenGL but still ships it.
 
 **Is it fast?**
-: hcc does basic optimisation (constant folding, some dead-code elimination). It's slower than `gcc -O2` on tight loops, but fast enough for software rendering at retro resolutions, and with OpenGL the GPU does the heavy lifting anyway.
+: hcc does basic optimisation (constant folding, some dead-code elimination). It's slower than `gcc -O2` on tight loops, but fast enough for software rendering at retro resolutions, and with OpenGL the GPU does the heavy lifting anyway. [Profiling](profiling.md) shows how to find where the time goes.
 
 **Can I use audio?**
-: Yes, through SDL. The simplest route is `SDL_OpenAudioDevice` with no callback and `SDL_QueueAudio` each frame, which avoids passing a HolyC function to C. This guide doesn't include an audio example yet.
+: Yes, through SDL. The simplest route is `SDL_OpenAudioDevice` with no callback and `SDL_QueueAudio`, which avoids passing a HolyC function to C. [Sound](audio.md) walks through the `audio` example, which plays square-wave beeps this way.
 
 **Can I ship a game made this way?**
 : Yes. The output is a normal executable that depends on libc, libm, SDL2 and (for GL) libGL. `libtos` is linked in statically. Ship it the way you'd ship any Linux or macOS binary, and list SDL2 as a dependency or bundle it.

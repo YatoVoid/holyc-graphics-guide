@@ -42,8 +42,9 @@ if ($Run) {
         Write-Error "-Run needs -Only <example> so it knows which program to start."
     }
     $binaries = @{
-        "hello-world" = "hello"; "draw-basic" = "draw"; "sprite-demo" = "sprite";
-        "simple-3d" = "cube"; "sdl-demo" = "sdl_example"; "opengl-demo" = "opengl_example"
+        "hello-world" = "hello"; "draw-basic" = "draw"; "font-text" = "text"; "image-load" = "load"; "sprite-demo" = "sprite"; "tilemap" = "tilemap"; "audio" = "beep"; "gamepad" = "pad"; "templeos-bounce" = "bounce";
+        "simple-3d" = "cube"; "sdl-demo" = "sdl_example"; "opengl-demo" = "opengl_example";
+        "gl-texture" = "texture"
     }
     $bin = $binaries[$Only]
     if (-not $bin) { Write-Error "Unknown example: $Only" }
