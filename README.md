@@ -81,7 +81,7 @@ Everything here is tested against hcc 0.0.15-beta (commit `06ca611`), the newest
 | macOS, Apple Silicon and Intel | all thirteen built, all but the two OpenGL examples run |
 | Windows (WSL2) | nothing; the build script runs the Linux build inside WSL2, untested by CI |
 
-What a passing run means: the seven programs with a headless mode must produce byte-identical images to the SHA-256 sums in [`scripts/checksums.txt`](scripts/checksums.txt), on all three CI platforms. The window programs must open and keep running for three seconds. That catches crashes and rendering changes, but not everything a person would notice on screen.
+What a passing run means: the seven programs with a headless mode must produce byte-identical images to the SHA-256 sums in [`scripts/checksums.txt`](scripts/checksums.txt), on all three CI platforms, and `beep` must play the recorded samples through SDL's disk driver. The window programs must open and keep running for three seconds. That catches crashes and rendering changes, but not everything a person would notice on screen.
 
 ## Limitations
 
@@ -89,7 +89,7 @@ What a passing run means: the seven programs with a headless mode must produce b
 - **TempleOS graphics aren't available.** `GrLine`, `DCFill`, `Sprite3` and the rest are part of the TempleOS kernel, not HolyC.
 - **No native Windows.** hcc targets Linux and macOS. Windows users build and run everything inside WSL2.
 - **hcc is beta.** Some code compiles but gives wrong results. [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/) lists every bug found while writing this guide, with workarounds.
-- **Some things aren't checked automatically.** CI plays audio through SDL's dummy driver, which discards the samples, and doesn't run OpenGL on macOS.
+- **Some things aren't checked automatically.** CI doesn't run OpenGL on macOS, and four window examples are only checked for starting without a crash.
 - **The renderers are for learning.** The software 3D renderer has no depth buffer or clipping. Image loading takes 8-bit PPM in HolyC, or anything SDL2_image reads.
 
 ## What's next

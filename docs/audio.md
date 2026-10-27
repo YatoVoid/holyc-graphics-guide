@@ -63,8 +63,12 @@ CI runners have no audio hardware. SDL's dummy driver accepts and discards the s
 SDL_AUDIODRIVER=dummy ./build/bin/beep
 ```
 
-To check what the program actually produced, the `disk` driver writes the mixed output to a raw file (16-bit little-endian stereo at 48 kHz, after SDL's conversion). Open it in Audacity with File → Import → Raw Data.
+To check what the program actually produced, the `disk` driver writes the mixed output to a raw file at real-time speed. Open it in Audacity with File → Import → Raw Data.
 
 ```sh
 SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw ./build/bin/beep
 ```
+
+The layout depends on which SDL you have. SDL2 writes exactly what the program asked for: 16-bit little-endian mono at 48 kHz. sdl2-compat on SDL3 (what Homebrew and Arch install) writes stereo with the same samples in both channels, and prints the format it chose. Either way there's some silence before and after the sound, and its length changes from run to run.
+
+`scripts/check.sh` uses this to check `beep`. It keeps one channel, drops the silence at both ends, and compares the SHA-256 of the samples with the `beep.pcm` line in `scripts/checksums.txt`. Any other format than 16-bit little-endian fails the check rather than being guessed at.

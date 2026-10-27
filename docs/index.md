@@ -50,7 +50,7 @@ hcc turns HolyC into x86_64 or AArch64 assembly, then calls the system C compile
 
 ## Status and platforms
 
-Everything is tested against hcc 0.0.15-beta (commit `06ca611`). On every change, CI builds that hcc from source and runs `scripts/check.sh`. The seven examples with a headless mode must produce byte-identical images to recorded SHA-256 sums, and the window examples must open and keep running.
+Everything is tested against hcc 0.0.15-beta (commit `06ca611`). On every change, CI builds that hcc from source and runs `scripts/check.sh`. The seven examples with a headless mode must produce byte-identical images to recorded SHA-256 sums, `beep` must play its recorded samples, and the window examples must open and keep running.
 
 | Platform | Status |
 |---|---|
@@ -58,7 +58,7 @@ Everything is tested against hcc 0.0.15-beta (commit `06ca611`). On every change
 | macOS (Apple Silicon and Intel) | Works. CI builds all thirteen and runs all but the two OpenGL ones. |
 | Windows | Only through WSL2, which isn't tested by CI. hcc has no Windows backend, so it can't produce `.exe` files. Windows 11 shows WSL2 windows through WSLg. |
 
-The main limits, besides hcc being beta: CI doesn't check audio output or run OpenGL on macOS, and the software 3D renderer has no depth buffer or clipping. The [roadmap](roadmap.md) lists what's being worked on next.
+The main limits, besides hcc being beta: CI doesn't run OpenGL on macOS, four window examples are only checked for starting without a crash, and the software 3D renderer has no depth buffer or clipping. The [roadmap](roadmap.md) lists what's being worked on next.
 
 ## Where to start
 
