@@ -53,13 +53,15 @@ build_script="$ROOT/scripts/build-linux.sh"
 
 echo "checking"
 
-if "$BIN/hello" | grep -q '^Hello from HolyC!$'; then
+# Headless programs finish in well under a second; the limit turns a hang
+# into one failed check instead of a stuck job.
+if run_for 30 "$BIN/hello" | grep -q '^Hello from HolyC!$'; then
   pass "hello prints its greeting"
 else
   fail "hello prints its greeting"
 fi
 
-if (cd "$ROOT/examples/hello-world" && hcc -jit hello.HC) | grep -q 'stands at (6, 5)'; then
+if (cd "$ROOT/examples/hello-world" && run_for 30 hcc -jit hello.HC) | grep -q 'stands at (6, 5)'; then
   pass "hello runs under the JIT"
 else
   fail "hello runs under the JIT"
@@ -74,37 +76,37 @@ check_ppm() {
   [ "$(wc -c <"$file" | tr -d ' ')" -eq $((header_bytes + w * h * 3)) ]
 }
 
-if "$BIN/draw" "$TMP/draw.ppm" >/dev/null && check_ppm "$TMP/draw.ppm" 320 200; then
+if run_for 30 "$BIN/draw" "$TMP/draw.ppm" >/dev/null && check_ppm "$TMP/draw.ppm" 320 200; then
   pass "draw writes a 320x200 image"
 else
   fail "draw writes a 320x200 image"
 fi
 
-if "$BIN/text" "$TMP/text.ppm" >/dev/null && check_ppm "$TMP/text.ppm" 320 200; then
+if run_for 30 "$BIN/text" "$TMP/text.ppm" >/dev/null && check_ppm "$TMP/text.ppm" 320 200; then
   pass "text writes a 320x200 image"
 else
   fail "text writes a 320x200 image"
 fi
 
-if (cd "$ROOT/examples/image-load" && "$BIN/load" "$TMP/load.ppm" >/dev/null) && check_ppm "$TMP/load.ppm" 240 160; then
+if (cd "$ROOT/examples/image-load" && run_for 30 "$BIN/load" "$TMP/load.ppm" >/dev/null) && check_ppm "$TMP/load.ppm" 240 160; then
   pass "load reads a PPM and a PNG"
 else
   fail "load reads a PPM and a PNG"
 fi
 
-if "$BIN/tilemap" --ppm "$TMP/tilemap.ppm" >/dev/null && check_ppm "$TMP/tilemap.ppm" 240 160; then
+if run_for 30 "$BIN/tilemap" --ppm "$TMP/tilemap.ppm" >/dev/null && check_ppm "$TMP/tilemap.ppm" 240 160; then
   pass "tilemap plays two seconds without a window"
 else
   fail "tilemap plays two seconds without a window"
 fi
 
-if "$BIN/bounce" --ppm "$TMP/bounce.ppm" >/dev/null && check_ppm "$TMP/bounce.ppm" 640 480; then
+if run_for 30 "$BIN/bounce" --ppm "$TMP/bounce.ppm" >/dev/null && check_ppm "$TMP/bounce.ppm" 640 480; then
   pass "bounce runs 20000 steps to a file"
 else
   fail "bounce runs 20000 steps to a file"
 fi
 
-if "$BIN/cube" --ppm "$TMP/cube.ppm" >/dev/null && check_ppm "$TMP/cube.ppm" 320 200; then
+if run_for 30 "$BIN/cube" --ppm "$TMP/cube.ppm" >/dev/null && check_ppm "$TMP/cube.ppm" 320 200; then
   pass "cube renders a frame to a file"
 else
   fail "cube renders a frame to a file"

@@ -238,11 +238,13 @@ if (!CanvasLoadPpm(&bricks, "bricks.ppm"))
   return 1;
 ```
 
-It only accepts 8-bit binary PPMs (`P6` with a maximum of 255). That's what `CanvasSavePpm` writes and what ImageMagick produces by default, so any image can be converted ahead of time:
+It only accepts 8-bit binary PPMs (`P6` with a maximum of 255). That's what `CanvasSavePpm` writes, and ImageMagick writes it when asked for 8 bits per channel, so any image can be converted ahead of time:
 
 ```sh
-magick tiles.png tiles.ppm
+magick tiles.png -depth 8 tiles.ppm
 ```
+
+Leave out `-depth 8` and ImageMagick picks the smallest maximum that fits the image: 65535 for a 16-bit PNG, but 3 for an image with only four shades of grey. The reader rejects both.
 
 PPM has no alpha channel, so every pixel comes in opaque. It needs no library at all.
 

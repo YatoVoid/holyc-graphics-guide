@@ -197,12 +197,16 @@ I64 PpmNumber(U8 *file, I64 size, I64 *pos)
       value = 0;
     value = value * 10 + file[*pos] - '0';
     *pos += 1;
+    // 65535 is the largest maxval PPM allows. Capping widths and heights
+    // there too keeps w * h * 4 from overflowing in the caller.
+    if (value > 65535)
+      return -1;
   }
   return value;
 }
 
 // Reads a binary PPM (P6) with 8-bit channels: what CanvasSavePpm writes
-// and what `magick in.png out.ppm` produces. Initialises `c`; free it with
+// and what `magick in.png -depth 8 out.ppm` produces. Initialises `c`; free it with
 // CanvasFree. Returns FALSE for a missing file or any other kind of PPM.
 Bool CanvasLoadPpm(Canvas *c, U8 *path)
 {
