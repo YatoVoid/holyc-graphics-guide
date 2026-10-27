@@ -5,13 +5,13 @@ This guide shows how to write graphical programs in HolyC on a normal desktop OS
 <div class="shots" markdown>
 
 ![Software-rendered scene saved to a PPM file](media/draw.png)
-![Sprite demo running in an SDL window](media/sprite.png)
-![Software 3D renderer](media/cube.png)
-![OpenGL 3.3 cube](media/opengl.png)
+![Sprite demo: the player collects a gem while bats fly around](media/sprite.gif)
+![Software 3D renderer](media/cube.gif)
+![OpenGL 3.3 cube](media/opengl.gif)
 
 </div>
 
-Every image on this site comes from the example programs in [`examples/`](https://github.com/YatoVoid/holyc-graphics-guide/tree/main/examples), built with hcc 0.0.15-beta.
+Every image on this site comes from the example programs in [`examples/`](https://github.com/YatoVoid/holyc-graphics-guide/tree/main/examples), built with hcc 0.0.15-beta. The animations are frames from each example's own update and drawing code with scripted input.
 
 ## What this is, and what it isn't
 

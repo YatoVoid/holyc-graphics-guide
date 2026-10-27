@@ -1,21 +1,30 @@
 # HolyC Graphics Guide
 
-A guide and starter kit for writing graphical programs in HolyC on Linux, macOS and WSL2: software rendering, windows and input, sound, game controllers and OpenGL. It uses the [hcc](https://github.com/Jamesbarford/holyc-lang) compiler with SDL2 and OpenGL. No TempleOS, no VM, and no C or C++ in the examples.
+[![Examples](https://github.com/YatoVoid/holyc-graphics-guide/actions/workflows/examples.yml/badge.svg)](https://github.com/YatoVoid/holyc-graphics-guide/actions/workflows/examples.yml)
+[![Docs](https://github.com/YatoVoid/holyc-graphics-guide/actions/workflows/pages.yml/badge.svg)](https://yatovoid.github.io/holyc-graphics-guide/)
+![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20WSL2-informational)
+![Examples](https://img.shields.io/badge/examples-13-informational)
+![hcc](https://img.shields.io/badge/hcc-0.0.15--beta-informational)
+[![License](https://img.shields.io/badge/license-MIT-informational)](LICENSE)
 
-It's thirteen small programs that compile and run, a few hundred lines of reusable HolyC, and a docs site that explains how they fit together. It isn't an engine.
+Working examples and a docs site for writing graphical programs in HolyC on Linux, macOS and WSL2. They use the [hcc](https://github.com/Jamesbarford/holyc-lang) compiler, SDL2 and OpenGL, with no TempleOS, no VM, and no C or C++ in the examples. It's a reference and a starter kit, not an engine.
 
-**Docs: https://yatovoid.github.io/holyc-graphics-guide/**
+**Docs: [yatovoid.github.io/holyc-graphics-guide](https://yatovoid.github.io/holyc-graphics-guide/)** · [Quick start](#quick-start) · [Examples](#featured-examples) · [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/)
 
 <p align="center">
-  <img src="docs/media/sprite.png" width="45%" alt="Sprite demo: a character, a gem and two bats on a checkered floor">
-  <img src="docs/media/opengl.png" width="45%" alt="OpenGL demo: a vertex-coloured cube">
-</p>
-<p align="center">
-  <img src="docs/media/draw.png" width="45%" alt="Software-rendered scene: a house, hills and a sun">
-  <img src="docs/media/cube.png" width="45%" alt="Software 3D: a shaded cube and pyramid">
+  <img src="docs/media/tilemap.gif" width="32%" alt="tilemap: the player runs and jumps through a scrolling level">
+  <img src="docs/media/cube.gif" width="32%" alt="simple-3d: a cube and a pyramid rendered on the CPU">
+  <img src="docs/media/opengl.gif" width="32%" alt="opengl-demo: a vertex-coloured cube spinning on OpenGL 3.3">
 </p>
 
-Every image above is output from the example programs in this repo.
+## What this repo gives you
+
+- **Thirteen example programs** that compile and run: software drawing, bitmap text, sprites, a scrolling tilemap, sound, gamepads, CPU 3D and OpenGL.
+- **Reusable HolyC** in [`examples/common/`](examples/common/): a framebuffer with drawing functions, a bitmap font, a PPM reader and writer, and SDL2, SDL2_image and OpenGL declarations.
+- **A docs site** that explains how the pieces fit: the frame loop, binding C libraries, sprites, 3D, sound, memory arenas, profiling and porting from TempleOS.
+- **Headless image tests.** Every example that draws has a `--ppm` mode that renders a fixed frame without a window. [`scripts/check.sh`](scripts/check.sh) compares each frame with a recorded SHA-256, and CI runs it on Linux and on Apple Silicon and Intel Macs.
+- **One-command setup.** The build scripts for Linux, macOS and WSL2 build the tested hcc commit from source, then every example.
+- **A compiler bug reference.** [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/) lists the hcc bugs found while writing this, each with a reproduction and a workaround, last re-tested in October 2026.
 
 ## Quick start
 
@@ -28,20 +37,26 @@ sudo apt install build-essential cmake git libsdl2-dev libsdl2-image-dev libgl-d
 
 ./scripts/build-linux.sh --install-hcc    # builds hcc into ~/.local, then the examples
 export PATH="$HOME/.local/bin:$PATH"
-./scripts/check.sh                        # build and run every example
+./scripts/check.sh                        # build and check every example
 
 cd examples/sprite-demo && hcc -jit sprite.HC
 ```
 
-macOS: use `./scripts/build-macos.sh`. Windows: run `.\scripts\build-windows.ps1 -InstallHcc`, which does the same thing inside WSL2.
+macOS: use `./scripts/build-macos.sh`. Windows: run `.\scripts\build-windows.ps1 -InstallHcc`, which does the same thing inside WSL2. [Installation](https://yatovoid.github.io/holyc-graphics-guide/installation/) covers Fedora, Arch, Homebrew and the details.
 
-## What's in here
+## Featured examples
 
-| Path | Contents |
+| | |
 |---|---|
-| [`examples/`](examples/) | thirteen programs, from hello world to an OpenGL cube, plus shared HolyC in `common/` |
-| [`docs/`](docs/) | the documentation site (MkDocs Material) |
-| [`scripts/`](scripts/) | build scripts for Linux, macOS and WSL2, and `check.sh` |
+| <img src="docs/media/sprite.gif" width="100%" alt="sprite-demo: the player collects a gem while bats fly around"> | <img src="docs/media/gl-texture.gif" width="100%" alt="gl-texture: a canvas with text and a moving ball, drawn on a quad that swings in 3D"> |
+| **[sprite-demo](examples/sprite-demo/)**: a small game. Sprites stored as ASCII art, fixed-point movement, collision, mouse input, a hit flash. | **[gl-texture](examples/gl-texture/)**: a scene drawn on the CPU every frame, uploaded as an OpenGL texture and shown on a moving quad. |
+| <img src="docs/media/bounce.gif" width="100%" alt="templeos-bounce: coloured lines bouncing and leaving trails"> | <img src="docs/media/draw.png" width="100%" alt="draw-basic: a house, hills and a sun drawn with lines, rectangles, circles and triangles"> |
+| **[templeos-bounce](examples/templeos-bounce/)**: TempleOS's `Bounce.HC` ported to hcc, with every change explained in [Porting from TempleOS](https://yatovoid.github.io/holyc-graphics-guide/templeos-porting/). | **[draw-basic](examples/draw-basic/)**: lines, rectangles, circles and triangles in a software framebuffer, saved as an image with no window. |
+
+The animations are frames from each example's own update and drawing code with scripted input, not screen recordings. The still image is the program's output file.
+
+<details>
+<summary>All thirteen examples</summary>
 
 | Example | Shows |
 |---|---|
@@ -58,6 +73,20 @@ macOS: use `./scripts/build-macos.sh`. Windows: run `.\scripts\build-windows.ps1
 | `sdl-demo` | SDL's 2D renderer driven directly from HolyC |
 | `opengl-demo` | OpenGL 3.3 core: shaders, buffers, matrices, depth testing |
 | `gl-texture` | a canvas uploaded as a GL texture every frame and drawn on a quad |
+
+[Example programs](https://yatovoid.github.io/holyc-graphics-guide/examples/) has the command to run each one, its controls and its full source.
+
+</details>
+
+## What you can build with it
+
+Each of these starts from code that's already here:
+
+- **A small 2D game.** `tilemap` has the level, camera and collision, `sprite-demo` the sprites and enemies, `audio` the sound effects and `gamepad` the controller input. [Project layout](https://yatovoid.github.io/holyc-graphics-guide/project-structure/) shows how to split a bigger game into files.
+- **A program that renders images without a window.** `canvas.HC` draws into memory and writes PPM files, the way `draw-basic` does. That's also how this repo tests its own rendering in CI.
+- **An OpenGL program with a CPU-drawn HUD.** `gl-texture` shows how to get anything drawn with `canvas.HC` and `font.HC` onto a GL texture.
+- **A port of a TempleOS graphics program.** `templeos-bounce` and its docs page go through replacing `DCAlias`, `GrLine` and the TempleOS window with SDL and the canvas.
+- **Bindings to another C library.** [Runtime bindings](https://yatovoid.github.io/holyc-graphics-guide/runtime-bindings/) explains how to declare any C API for hcc, using the SDL and GL declarations here as worked examples.
 
 ## How the graphics stack works
 
@@ -95,6 +124,10 @@ What a passing run means: every example that draws has a `--ppm` mode, and its f
 ## What's next
 
 The planned examples, docs and CI coverage are done. The remaining work is reporting the hcc bugs in [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/) upstream and re-testing them on each new hcc release. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/).
+
+## Contributing
+
+Bug reports, fixes and new examples are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers building, running the checks, updating a recorded checksum after an intended change, and reporting hcc bugs.
 
 ## Credits
 
