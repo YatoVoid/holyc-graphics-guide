@@ -15,7 +15,7 @@ Every image on this site comes from the example programs in [`examples/`](https:
 
 ## What this is, and what it isn't
 
-**It is** a guide and a starter kit: thirteen small programs that compile, a few hundred lines of reusable HolyC (a software framebuffer, SDL2 and OpenGL declarations), and docs explaining how they fit together.
+**It is** a guide and a starter kit: thirteen small programs that compile and run, a few hundred lines of reusable HolyC (a software framebuffer, a bitmap font, SDL2 and OpenGL declarations), and docs explaining how they fit together.
 
 **It isn't** an engine. hcc is a compiler. It gives you the HolyC language and a small runtime library (strings, memory, files, hash tables), but no windowing, input, audio or graphics. For those you call native C libraries from HolyC, which is most of what this guide teaches.
 
@@ -35,13 +35,30 @@ flowchart LR
 
 hcc turns HolyC into x86_64 or AArch64 assembly, then calls the system C compiler to assemble and link it. Because the result is an ordinary native binary, it can call any C library: you declare the functions with `extern "c"` and name the library with `#link`. hcc can also JIT-compile and run a file in-process with `hcc -jit`, which is handy while iterating.
 
-## Platform support
+## What the guide covers
+
+| Topic | Pages | Examples |
+|---|---|---|
+| Drawing pixels yourself | [Graphics and rendering](graphics.md), [Sprites and 2D](sprites.md) | `draw-basic`, `font-text`, `sprite-demo`, `tilemap`, `image-load` |
+| Windows, input, sound | [Graphics and rendering](graphics.md#input), [Sound](audio.md) | `sprite-demo`, `gamepad`, `audio`, `sdl-demo` |
+| 3D | [3D overview](3d-overview.md) | `simple-3d` (CPU), `opengl-demo` and `gl-texture` (GPU) |
+| Calling C libraries | [Runtime bindings](runtime-bindings.md) | every SDL2 and OpenGL example |
+| Larger programs | [Project layout](project-structure.md), [Memory arenas](memory-arenas.md), [Profiling](profiling.md) | |
+| Coming from TempleOS | [Porting from TempleOS](templeos-porting.md) | `templeos-bounce` |
+
+[Example programs](examples.md) describes all thirteen, with the command to run each one.
+
+## Status and platforms
+
+Everything is tested against hcc 0.0.15-beta (commit `06ca611`). On every change, CI builds that hcc from source and runs `scripts/check.sh`. The seven examples with a headless mode must produce byte-identical images to recorded SHA-256 sums, and the window examples must open and keep running.
 
 | Platform | Status |
 |---|---|
-| Linux x86_64 | Works. All examples tested here. |
-| macOS (Apple Silicon and Intel) | Works. CI builds every example on both and runs all but the two OpenGL ones. |
-| Windows | Only through WSL2. hcc has no Windows backend, so it can't produce `.exe` files. Windows 11 shows WSL2 windows through WSLg. |
+| Linux x86_64 | Works. CI runs all thirteen examples, the OpenGL ones on Mesa's software renderer. |
+| macOS (Apple Silicon and Intel) | Works. CI builds all thirteen and runs all but the two OpenGL ones. |
+| Windows | Only through WSL2, which isn't tested by CI. hcc has no Windows backend, so it can't produce `.exe` files. Windows 11 shows WSL2 windows through WSLg. |
+
+The main limits, besides hcc being beta: CI doesn't check audio output or run OpenGL on macOS, and the software 3D renderer has no depth buffer or clipping. The [roadmap](roadmap.md) lists what's being worked on next.
 
 ## Where to start
 

@@ -9,7 +9,7 @@
 | `sprite-demo/` | SDL2 | `hcc -jit sprite.HC` |
 | `tilemap/` | SDL2 | `hcc -jit tilemap.HC`, or `./tilemap --ppm out.ppm` after building |
 | `audio/` | SDL2 | `hcc -jit beep.HC` |
-| `gamepad/` | SDL2 | `hcc -jit pad.HC` |
+| `gamepad/` | SDL2 | `hcc -jit pad.HC`, or `./pad --ppm out.ppm` after building (virtual controller) |
 | `templeos-bounce/` | SDL2 | `hcc -jit bounce.HC`, or `./bounce --ppm out.ppm` after building |
 | `simple-3d/` | SDL2 | `hcc -jit cube.HC`, or `./cube --ppm out.ppm` after building |
 | `sdl-demo/` | SDL2 | `hcc -jit sdl_example.HC` |

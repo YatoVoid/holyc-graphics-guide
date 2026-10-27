@@ -1,6 +1,8 @@
 # HolyC Graphics Guide
 
-A guide and starter kit for writing graphical programs in HolyC on Linux, macOS and WSL2. It uses the [hcc](https://github.com/Jamesbarford/holyc-lang) compiler, SDL2 and OpenGL. No TempleOS, no VM, and no C or C++ in the examples.
+A guide and starter kit for writing graphical programs in HolyC on Linux, macOS and WSL2: software rendering, windows and input, sound, game controllers and OpenGL. It uses the [hcc](https://github.com/Jamesbarford/holyc-lang) compiler with SDL2 and OpenGL. No TempleOS, no VM, and no C or C++ in the examples.
+
+It's thirteen small programs that compile and run, a few hundred lines of reusable HolyC, and a docs site that explains how they fit together. It isn't an engine.
 
 **Docs: https://yatovoid.github.io/holyc-graphics-guide/**
 
@@ -69,16 +71,30 @@ extern "c" U0 *SDL_CreateWindow(U8 *title, I32 x, I32 y, I32 w, I32 h, U32 flags
 
 So a HolyC game is HolyC for the logic, maths and drawing code, SDL2 for the window and input, OpenGL for GPU rendering, and a few lines of GLSL for shaders. [Runtime bindings](https://yatovoid.github.io/holyc-graphics-guide/runtime-bindings/) covers how to write these declarations for any library.
 
+## Status and testing
+
+Everything here is tested against hcc 0.0.15-beta (commit `06ca611`), the newest upstream version as of October 2026. On every push, CI builds that hcc from source and runs [`scripts/check.sh`](scripts/check.sh):
+
+| Platform | What CI runs |
+|---|---|
+| Linux x86_64 (Ubuntu 24.04) | all thirteen examples, OpenGL included (on Mesa's software renderer) |
+| macOS, Apple Silicon and Intel | all thirteen built, all but the two OpenGL examples run |
+| Windows (WSL2) | nothing; the build script runs the Linux build inside WSL2, untested by CI |
+
+What a passing run means: the seven programs with a headless mode must produce byte-identical images to the SHA-256 sums in [`scripts/checksums.txt`](scripts/checksums.txt), on all three CI platforms. The window programs must open and keep running for three seconds. That catches crashes and rendering changes, but not everything a person would notice on screen.
+
 ## Limitations
 
 - **hcc is a compiler, not an engine.** It provides the language and a small runtime (strings, memory, files). Windows, input, graphics and audio come from C libraries you bind to.
 - **TempleOS graphics aren't available.** `GrLine`, `DCFill`, `Sprite3` and the rest are part of the TempleOS kernel, not HolyC.
 - **No native Windows.** hcc targets Linux and macOS. Windows users build and run everything inside WSL2.
 - **hcc is beta.** Some code compiles but gives wrong results. [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/) lists every bug found while writing this guide, with workarounds.
+- **Some things aren't checked automatically.** CI plays audio through SDL's dummy driver, which discards the samples, and doesn't run OpenGL on macOS.
+- **The renderers are for learning.** The software 3D renderer has no depth buffer or clipping. Image loading takes 8-bit PPM in HolyC, or anything SDL2_image reads.
 
-## Status
+## What's next
 
-A learning resource and starting point, tested against hcc 0.0.15-beta (commit `06ca611`) on Linux x86_64. CI builds hcc and runs every example on Ubuntu, and every example except the two OpenGL ones on macOS, on both Apple Silicon and Intel. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/) for what's planned.
+The planned examples, docs and CI coverage are done. The remaining work is closing the testing gaps above and keeping up with hcc. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/) for the order.
 
 ## Credits
 
