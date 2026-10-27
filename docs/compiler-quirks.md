@@ -1,6 +1,6 @@
 # Compiler quirks
 
-hcc is beta software, and its README says as much. The bugs below were each hit while writing this guide or [Ossuary](https://github.com/YatoVoid/ossuary), and each was reproduced in a small test program against hcc 0.0.15-beta (commit `06ca611`). Newer versions may have fixed some of them. If you're on a newer hcc, test before relying on either the bug or the workaround.
+hcc is beta software, and its README says as much. The bugs below were each hit while writing this guide or [Ossuary](https://github.com/YatoVoid/ossuary), and each was reproduced in a small test program against hcc 0.0.15-beta (commit `06ca611`), as a normal build and under `-jit`, on Linux x86_64 unless the entry says otherwise. They were last re-tested in October 2026, when `06ca611` was still the newest commit upstream. If you're on a newer hcc, test before relying on either the bug or the workaround.
 
 The dangerous ones compile without any warning and give wrong answers, so they're listed first.
 
@@ -32,10 +32,10 @@ Comparing a float with an **integer literal** truncates the float and compares a
 
 ```holyc
 Bool moving = speed > 0.01;   // always FALSE
-return a < b;                 // always 0 when a and b are floats
+Show(speed > 0.01);           // passes 0
 ```
 
-A float comparison used as a **value** (assigned, returned, or passed as an argument) evaluates to 0. Float comparisons only work directly as the condition of `if`, `while` or `for`.
+A float comparison that's **assigned** or **passed as an argument** evaluates to 0. It works as the condition of `if`, `while` or `for`, and as a `return` value.
 
 **Workaround:**
 
@@ -54,7 +54,7 @@ if (a && b)            // FALSE whenever b's address ends in 0x00
 return tiles && name;  // same, and the result isn't 0 or 1 either
 ```
 
-`&&` and `||` test their left operand correctly, but only look at the **low byte** of the right operand. A pointer or `I64` on the right whose low byte is zero counts as false: `0 || 0x100` is false, and so is `5 && 0x200`. Allocations are often 16-byte aligned, so `a && b` on two valid pointers fails roughly one time in sixteen. The value of `a && b` is the right operand's low byte, not 1.
+`&&` and `||` test their left operand correctly, but only look at the **low byte** of the right operand. A pointer or `I64` on the right whose low byte is zero counts as false: `0 || 0x100` is false, and so is `5 && 0x200`. `MAlloc` returns 8-byte aligned addresses, so `a && b` on two valid pointers fails about one time in 32. The value of `a && b` isn't 1 either: it's the right operand's low byte, sign-extended, so `5 && 0x2A1` is -95.
 
 Comparisons, `!x`, `Bool` and other one-byte values are all safe on the right, since they're already 0 or 1.
 
@@ -85,13 +85,26 @@ U64 top53 = (seed >> 11) & 0x1FFFFFFFFFFFFF;
 F64 f = top53;     // always positive now
 ```
 
+## `%d` in a print statement is 32-bit
+
+```holyc
+I64 big = 1 << 40;
+"%d\n", big;                    // prints 0
+"%ld\n", big;                   // prints 1099511627776
+StrPrint(buf, "%d", big);       // "1099511627776"
+```
+
+A bare string used as a print statement formats like C's `printf`: `%d`, `%x` and `%u` take only the low 32 bits of an `I64`, so 2^31 prints as -2147483648 and 2^40 as 0. The value itself is fine. `StrPrint` and `MStrPrint` use TempleOS's formatter instead, where `%d` is the full 64 bits and `%ld` is an error ("Invalid format char").
+
+**Workaround:** in print statements, use `%ld`, `%lx` and `%lu` for anything that can pass 32 bits. In `StrPrint` and `MStrPrint`, keep `%d`.
+
 ## Bool && float comparison
 
 ```holyc
 if (on_ground && speed > 0.0)   // build fails
 ```
 
-hcc prints `WARNING: Binop has returned null type` and `Binary type is being assigned as NULL`, then exits with status 1 without writing a binary.
+hcc prints `WARNING: Binop has returned null type`, `Binary type is being assigned as NULL` and ``error: The `&&` operator cannot be applied to a character type with a binary op of float type``, then exits with status 1 without writing a binary.
 
 **Workaround:** nest the conditions.
 
@@ -102,11 +115,14 @@ if (on_ground) {
 }
 ```
 
-## Returning small classes by value
+## Small classes in and out by value under `-jit`
 
 ```holyc
-Vec3 V3Add(Vec3 a, Vec3 b);   // crashes for a 3 x F32 (12-byte) class
+class Cell { I32 x, y, z; };
+Cell Add(Cell a, Cell b);   // right in a normal build, garbage under -jit
 ```
+
+Under `hcc -jit`, a function that takes a class by value **and** returns one gives wrong values when the class is made of integers and is 16 bytes or smaller (`3 x I32`, `2 x I64`, `3 x U8` and so on). Normal builds get every case right. Under `-jit`, passing such a class in or returning one is fine on its own, and so are classes of floats and classes bigger than 16 bytes.
 
 **Workaround:** pass an output pointer, which is how all the maths in this guide is written.
 
@@ -119,11 +135,13 @@ U0 V3Add(Vec3 *out, Vec3 *a, Vec3 *b);
 ```holyc
 U0 SetCamera(Game *g, I64 x)
 {
-  g->cam_x = MaxI64(0, x);   // segfault
+  g->cam_y = MaxI64(0, x);   // segfault
 }
 ```
 
-Assigning the result of a call that takes arguments straight into a field of a pointer **parameter** can crash. hcc keeps the parameter in the register it arrived in, the call's own arguments overwrite that register, and the store goes to a garbage address. It happens under `-jit` too. Calls with no arguments are fine, and so are pointers held in locals (`Player *p = &g->player; p->x = MaxI64(...)`).
+Assigning the result of a call straight into a field of a pointer **parameter** crashes when the field isn't the first one in the class and the call takes arguments. hcc keeps the parameter in the register it arrived in, the call's arguments overwrite that register, and the store goes to a garbage address. It happens under `-jit` too.
+
+Which register matters: a pointer that arrived second only breaks when the call has at least two arguments. Copying the parameter into a local (`Game *h = g; h->cam_y = MaxI64(...)`) doesn't help, because the local stays in the same register. These are fine: the first field (offset 0), calls with no arguments, and pointers that didn't come from a parameter, like globals or `&g_game`.
 
 **Workaround:** put the result in a local first.
 
@@ -169,7 +187,7 @@ This applies to globals only. Locals and class fields can share a line.
 
 ## Address of an extern function
 
-Taking `&SomeCFunction` of an `extern "c"` function fails to link as PIE. Call C functions directly instead of storing pointers to them.
+Taking `&SomeCFunction` of an `extern "c"` function fails to link as PIE (it works under `-jit`). Call C functions directly instead of storing pointers to them.
 
 ## Defined before use
 

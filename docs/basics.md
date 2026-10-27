@@ -59,6 +59,8 @@ U8 *s = MStrPrint("%d,%d", x, y);    // allocates; Free(s) later
 StrPrint(buf, "score %d", score);    // into an existing buffer
 ```
 
+In a print statement, `%d` only formats 32 bits; use `%ld` for larger values. `StrPrint` and `MStrPrint` take `%d` for any size. See [Compiler quirks](compiler-quirks.md#d-in-a-print-statement-is-32-bit).
+
 ## Memory
 
 `MAlloc`, `CAlloc` (zeroed), `Free`, `MemSet`, `MemCpy`. There's no garbage collector.

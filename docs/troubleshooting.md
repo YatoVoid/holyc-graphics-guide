@@ -67,8 +67,11 @@
 
 ## Crashes and wrong results
 
-**Segfault in maths code**
-: Look for functions returning a small class by value. Switch them to output pointers. See [Compiler quirks](compiler-quirks.md#returning-small-classes-by-value).
+**Segfault storing into a struct**
+: Look for `p->field = SomeCall(...)` where `p` is a function parameter. Put the call's result in a local first. See [Compiler quirks](compiler-quirks.md#call-results-into-a-parameters-fields).
+
+**Right in a normal build, wrong under `-jit`**
+: Look for functions that take and return a small class by value. Switch them to output pointers. See [Compiler quirks](compiler-quirks.md#small-classes-in-and-out-by-value-under-jit).
 
 **Values are wrong, often by sign**
 : Look for a unary minus on an indexed value (`-v[i] * ...`). See [Compiler quirks](compiler-quirks.md#negating-an-indexed-value).

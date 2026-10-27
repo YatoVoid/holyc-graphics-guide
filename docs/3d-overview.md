@@ -74,7 +74,7 @@ Things it needed that this guide doesn't cover in depth: a memory arena for per-
 
 ## Things that will catch you
 
-- **Struct returns.** Returning a small class like a 3-float vector by value can crash hcc-compiled code. Write maths as `V3Add(Vec3 *out, Vec3 *a, Vec3 *b)`. See [Compiler quirks](compiler-quirks.md#returning-small-classes-by-value).
+- **Classes by value.** Under `hcc -jit`, a function that takes and returns a small integer class by value gives wrong results. Writing maths as `V3Add(Vec3 *out, Vec3 *a, Vec3 *b)` avoids it everywhere. See [Compiler quirks](compiler-quirks.md#small-classes-in-and-out-by-value-under-jit).
 - **Negating array elements.** `-v[0] * s + v[2] * c` miscompiles. This bug was found while writing the cube example. See [Compiler quirks](compiler-quirks.md#negating-an-indexed-value).
 - **Column-major order.** OpenGL expects matrix element `[col * 4 + row]`. If your scene comes out mirrored or sheared, check the order first.
 - **macOS needs core profile.** Request 3.3 core with the forward-compatible flag, or macOS gives you OpenGL 2.1.
