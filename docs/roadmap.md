@@ -4,11 +4,7 @@
 
 The examples, docs and CI coverage planned for this guide are done. There are thirteen example programs. CI builds all of them on Linux and on Apple Silicon and Intel Macs, and runs all of them except the two OpenGL ones on macOS. Every example that draws is checked against a recorded image checksum (the OpenGL ones on llvmpipe), and the audio example against a checksum of its samples. Everything targets hcc 0.0.15-beta (commit `06ca611`), which was still the newest upstream version when the [compiler quirks](compiler-quirks.md) were last re-tested in October 2026.
 
-What's left is getting the hcc bugs found here reported upstream, and keeping up with hcc as it changes.
-
-## Next
-
-1. **Report the compiler quirks upstream.** Each entry has a minimal reproduction already. They belong in [hcc's issue tracker](https://github.com/Jamesbarford/holyc-lang/issues).
+Every hcc bug found here is reported upstream. What's left is keeping up with hcc as it changes.
 
 ## Ongoing
 
@@ -39,5 +35,9 @@ What's left is getting the hcc bugs found here reported upstream, and keeping up
 - [x] The gamepad example is tested with SDL's virtual controller, including unplugging and replugging.
 - [x] The audio example's samples are checked through SDL's disk driver, on SDL2 and on sdl2-compat.
 - [x] `--ppm` modes for `sprite-demo`, `sdl-demo`, `opengl-demo` and `gl-texture`. The OpenGL frames match on llvmpipe across Mesa 25.2 and 26.2; other drivers differ by a few pixels, so those checks run on llvmpipe only.
+
+### Tracking hcc
+
+- [x] Every bug in [Compiler quirks](compiler-quirks.md) reported to hcc ([#283](https://github.com/Jamesbarford/holyc-lang/issues/283) to [#294](https://github.com/Jamesbarford/holyc-lang/issues/294), plus the existing #117 and #206).
 
 Contributions are welcome. Open an issue first for anything large.

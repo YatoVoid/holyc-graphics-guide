@@ -123,7 +123,7 @@ What a passing run means: every example that draws has a `--ppm` mode, and its f
 
 ## What's next
 
-The planned examples, docs and CI coverage are done. The remaining work is reporting the hcc bugs in [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/) upstream and re-testing them on each new hcc release. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/).
+The planned examples, docs and CI coverage are done. Every hcc bug in [Compiler quirks](https://yatovoid.github.io/holyc-graphics-guide/compiler-quirks/) is reported upstream and linked from its entry. The remaining work is re-testing them on each new hcc release and dropping the fixed ones. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/).
 
 ## Contributing
 

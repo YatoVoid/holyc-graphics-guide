@@ -1,6 +1,6 @@
 # Compiler quirks
 
-hcc is beta software, and its README says as much. The bugs below were each hit while writing this guide or [Ossuary](https://github.com/YatoVoid/ossuary), and each was reproduced in a small test program against hcc 0.0.15-beta (commit `06ca611`), as a normal build and under `-jit`, on Linux x86_64 unless the entry says otherwise. They were last re-tested in October 2026, when `06ca611` was still the newest commit upstream. If you're on a newer hcc, test before relying on either the bug or the workaround.
+hcc is beta software, and its README says as much. The bugs below were each hit while writing this guide or [Ossuary](https://github.com/YatoVoid/ossuary), and each was reproduced in a small test program against hcc 0.0.15-beta (commit `06ca611`), as a normal build and under `-jit`, on Linux x86_64 unless the entry says otherwise. They were last re-tested in October 2026, when `06ca611` was still the newest commit upstream, and each bug links to its upstream issue. If you're on a newer hcc, test before relying on either the bug or the workaround.
 
 The dangerous ones compile without any warning and give wrong answers, so they're listed first.
 
@@ -18,6 +18,8 @@ When the operand of unary minus is an array or pointer index, hcc 0.0.15 negates
 F64 z = v[2] * c - v[0] * s;
 F64 z = (-v[0]) * s + v[2] * c;
 ```
+
+Upstream: [#283](https://github.com/Jamesbarford/holyc-lang/issues/283).
 
 ## Float comparisons
 
@@ -45,6 +47,8 @@ if (speed > 0.01)
   moving = TRUE;
 ```
 
+Upstream: [#284](https://github.com/Jamesbarford/holyc-lang/issues/284), [#285](https://github.com/Jamesbarford/holyc-lang/issues/285).
+
 ## Pointers and wide integers in `&&` and `||`
 
 ```holyc
@@ -68,6 +72,8 @@ if (!tiles || !name)
 return TRUE;
 ```
 
+Upstream: [#286](https://github.com/Jamesbarford/holyc-lang/issues/286).
+
 ## Unsigned 64-bit shifts and conversions
 
 ```holyc
@@ -85,6 +91,8 @@ U64 top53 = (seed >> 11) & 0x1FFFFFFFFFFFFF;
 F64 f = top53;     // always positive now
 ```
 
+Upstream: [#287](https://github.com/Jamesbarford/holyc-lang/issues/287).
+
 ## `%d` in a print statement is 32-bit
 
 ```holyc
@@ -97,6 +105,8 @@ StrPrint(buf, "%d", big);       // "1099511627776"
 A bare string used as a print statement formats like C's `printf`: `%d`, `%x` and `%u` take only the low 32 bits of an `I64`, so 2^31 prints as -2147483648 and 2^40 as 0. The value itself is fine. `StrPrint` and `MStrPrint` use TempleOS's formatter instead, where `%d` is the full 64 bits and `%ld` is an error ("Invalid format char").
 
 **Workaround:** in print statements, use `%ld`, `%lx` and `%lu` for anything that can pass 32 bits. In `StrPrint` and `MStrPrint`, keep `%d`.
+
+Upstream: [#117](https://github.com/Jamesbarford/holyc-lang/issues/117).
 
 ## Bool && float comparison
 
@@ -115,6 +125,8 @@ if (on_ground) {
 }
 ```
 
+Upstream: [#288](https://github.com/Jamesbarford/holyc-lang/issues/288).
+
 ## Small classes in and out by value under `-jit`
 
 ```holyc
@@ -129,6 +141,8 @@ Under `hcc -jit`, a function that takes a class by value **and** returns one giv
 ```holyc
 U0 V3Add(Vec3 *out, Vec3 *a, Vec3 *b);
 ```
+
+Upstream: [#289](https://github.com/Jamesbarford/holyc-lang/issues/289).
 
 ## Call results into a parameter's fields
 
@@ -150,6 +164,8 @@ x = MaxI64(0, x);
 g->cam_x = x;
 ```
 
+Upstream: [#290](https://github.com/Jamesbarford/holyc-lang/issues/290).
+
 ## Initialised globals and Main's arguments
 
 ```holyc
@@ -166,6 +182,8 @@ On AArch64 (Apple Silicon), a global with an initialiser that hcc can't place in
 
 **Workaround:** don't initialise scalar globals where they're declared. Globals start at zero, so `= 0` can just be dropped, and any other starting value can be set at the top of `Main` or in a setup function it calls.
 
+Upstream: [#291](https://github.com/Jamesbarford/holyc-lang/issues/291).
+
 ## One global per declaration
 
 ```holyc
@@ -177,6 +195,8 @@ This applies to globals only. Locals and class fields can share a line.
 
 **Workaround:** one global per line.
 
+Upstream: [#292](https://github.com/Jamesbarford/holyc-lang/issues/292).
+
 ## Function-like macros crash the compiler
 
 ```holyc
@@ -185,17 +205,23 @@ This applies to globals only. Locals and class fields can share a line.
 
 **Workaround:** write a function. Plain `#define NAME value` works fine.
 
+Upstream: [#293](https://github.com/Jamesbarford/holyc-lang/issues/293).
+
 ## Address of an extern function
 
 Taking `&SomeCFunction` of an `extern "c"` function fails to link as PIE (it works under `-jit`). Call C functions directly instead of storing pointers to them.
 
+Upstream: [#294](https://github.com/Jamesbarford/holyc-lang/issues/294).
+
 ## Defined before use
 
-A function used before its definition fails with "Variable or function has not been defined". Either order the file so definitions come first, or add a prototype (`I64 Later(I64 a);`).
+A function used before its definition fails with "Variable or function has not been defined". Either order the file so definitions come first, or add a prototype (`I64 Later(I64 a);`). This looks like a design choice rather than a bug, so it isn't reported upstream.
 
 ## No ternary
 
 `a ? b : c` is a syntax error. Use `if`/`else`.
+
+Upstream: [#206](https://github.com/Jamesbarford/holyc-lang/issues/206).
 
 ## How to report a new one
 
