@@ -3,7 +3,8 @@
 #   - headless programs must exit 0 and produce the expected output
 #   - window programs run for a few seconds on SDL's offscreen driver and
 #     must still be running when the timeout stops them (no crash on start)
-# Pass --no-gl to skip running the OpenGL programs, which need a GPU context.
+# Pass --no-gl to skip running the OpenGL programs, which need an OpenGL 3.3
+# context from a GPU driver or Mesa's llvmpipe.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
