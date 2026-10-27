@@ -4,7 +4,7 @@ hcc writes ordinary native executables, so the system profilers work on them. Th
 
 ## What a profiler sees
 
-- **Function names.** hcc keeps the symbol table, so samples are attributed to your HolyC functions by name. Your `Main` shows up as `MainFn`, called from a small C `main`.
+- **Function names.** hcc keeps the symbol table, so samples are attributed to your HolyC functions by name. Your `Main` is compiled as `main`. In a program with initialised scalar globals it's `MainFn` instead, called from a small `main` that sets those globals first.
 - **Call stacks.** Every function hcc generates sets up a frame pointer (`push %rbp; mov %rsp,%rbp`), which is what profilers walk to build call graphs. Nothing extra is needed at compile time.
 - **No source lines.** hcc emits no debug info, so a profiler can tell you which function is hot, and which instruction, but not which line of HolyC.
 - **Nothing from the JIT.** Code run with `hcc -jit` lives in anonymous memory, and a profiler shows it as bare addresses. Build the program with `hcc file.HC -o file` before profiling it.
@@ -35,27 +35,24 @@ SDL_VIDEODRIVER=offscreen perf record -g --user-callchains -- timeout 5 ./cube
 The report for `cube`, trimmed. Each function is followed by the call stacks it was sampled in, innermost first:
 
 ```text
-    32.38%  cube     [.] EdgeSide
-            |--28.65%--EdgeSide
-            |          |--24.51%--CanvasFillTriangle
+    33.76%  cube     [.] EdgeSide
+            |--29.62%--EdgeSide
+            |          |--25.32%--CanvasFillTriangle
             |          |          RenderFrame
-            |          |          MainFn
             |          |          main
-            |           --4.14%--RenderFrame
-            |                     MainFn
+            |           --4.30%--RenderFrame
             |                     main
-    23.22%  cube     [.] CanvasFillRect
-             --23.21%--CanvasFillRect
+    22.73%  cube     [.] CanvasFillRect
+             --22.72%--CanvasFillRect
                        DrawFloor
                        RenderFrame
-                       MainFn
                        main
-    22.23%  cube     [.] CanvasFillTriangle
+    22.19%  cube     [.] CanvasFillTriangle
 ```
 
 A third of the time goes to `EdgeSide`, the one-expression function `CanvasFillTriangle` calls three times per pixel. Almost a quarter goes to `CanvasFillRect`, all of it from `DrawFloor` filling the background. That's the kind of answer a profile is for: which function to work on, and from which caller.
 
-`RenderFrame` never calls `EdgeSide` directly, so the 4% path is wrong. A sample that lands in the first instructions of a function, before it has set up its frame pointer, loses its immediate caller. That's a limit of call graphs built from frame pointers, and it only moves small percentages.
+`RenderFrame` never calls `EdgeSide` directly, so the 4.30% path is wrong. A sample that lands in the first instructions of a function, before it has set up its frame pointer, loses its immediate caller. That's a limit of call graphs built from frame pointers, and it only moves small percentages.
 
 ## Reading the hot code
 
@@ -112,13 +109,28 @@ if (frames == 300) {
 
 ## Instruments on macOS
 
-The same ideas apply on macOS, through Instruments' **Time Profiler**, either from the Instruments app (choose the built executable as the target) or from the command line:
+Instruments' **Time Profiler** does the same job on macOS. Use it from the Instruments app (choose the built executable as the target) or from the command line:
 
 ```sh
-xcrun xctrace record --template 'Time Profiler' --launch -- ./cube
-open *.trace
+xcrun xctrace record --template 'Time Profiler' --time-limit 10s --output cube.trace --launch -- ./cube
+open cube.trace
 ```
 
-For a quick text call tree of a running program, `sample cube 5` samples it for five seconds.
+`xctrace` exits with status 54 when it stops at the time limit, but the trace is saved. For a quick text call tree of a program that's already running, `sample cube 5` samples it for five seconds.
 
-The macOS commands above haven't been tested by this guide; only Linux has. Expect function names to show up the same way. Apple's arm64 calling convention requires frame pointers, so call stacks should work too, but check the first profile against what you know the program does.
+Both work on Apple Silicon and Intel Macs, with full call stacks. On a run of `cube`, the Time Profiler puts `EdgeSide` at the top, as `perf` does. One thing differs from Linux. Some frames are named after hcc's internal labels, like `.LIRBB13_88`, instead of the function they're in. Part of a `sample` call tree:
+
+```text
+2328 start  (in dyld)
+  2229 .LIRBB37_301  (in cube)
+    2221 ScreenPresent  (in cube)
+```
+
+Linux drops labels that start with `.L` from the symbol table, but on macOS they become symbols, so the profiler credits a sample to the nearest label before it. To find the function a label belongs to, search the assembly from `hcc -S` for the nearest function name above the label:
+
+```sh
+hcc -S cube.HC -o cube.s
+awk '/^_[A-Za-z][A-Za-z0-9_]*:/ { f = $1 } $1 == ".LIRBB37_301:" { print f }' cube.s     # _main:
+```
+
+The `.LIRBB` frames in the `cube` profile belong to `CanvasFillTriangle`, `CanvasFillRect` and `main`, the same functions `perf` reports.
