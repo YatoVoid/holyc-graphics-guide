@@ -29,6 +29,7 @@ holyc-graphics-guide/
 │   ├── build-macos.sh
 │   ├── build-windows.ps1      runs build-linux.sh inside WSL2
 │   ├── check.sh               build + run every example, report pass/fail
+│   ├── checksums.txt          SHA-256 of each headless example's image
 │   └── common.sh              shared by the two shell build scripts
 └── .github/workflows/
     ├── pages.yml              build and deploy this site
