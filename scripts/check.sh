@@ -138,12 +138,44 @@ else
   fail "pad draws a virtual controller and sees it unplugged"
 fi
 
-# The dummy driver plays the queue at real-time speed into nothing, so
-# this also checks that the program waits for its sounds and then exits.
-if SDL_AUDIODRIVER=dummy run_for 10 "$BIN/beep" 2>&1 | grep -q '^done$'; then
-  pass "beep plays its queue and exits"
+# SDL's disk driver plays the queue at real-time speed into a raw file.
+# The file isn't the same from one SDL to the next: SDL2 writes the mono
+# stream beep asked for, SDL3's sdl2-compat writes stereo with both
+# channels the same and logs its format, and how much silence comes
+# before and after the sound depends on timing. So keep one channel, drop
+# the silence at both ends, and hash the samples as text.
+check_audio() {
+  local raw="$1" log="$2" channels format
+  [ -s "$raw" ] || return 1
+  channels="$(sed -n 's/.*channels=\([0-9]*\).*/\1/p' "$log" | head -n 1)"
+  format="$(sed -n 's/.*format=\([A-Z0-9]*\).*/\1/p' "$log" | head -n 1)"
+  if [ -n "$format" ] && [ "$format" != "S16LE" ]; then
+    echo "        beep: disk driver wrote $format, only S16LE is handled"
+    return 1
+  fi
+  od -An -v -t d2 "$raw" | awk -v ch="${channels:-1}" '
+    { for (i = 1; i <= NF; i++) { c = n % ch; n++
+        if (c == 0) s = $i
+        else if ($i != s) { print "channels differ" > "/dev/stderr"; exit 1 }
+        if (c == ch - 1) { v[m++] = s } } }
+    END { a = 0; b = m - 1
+          while (a < m && v[a] == 0) a++
+          while (b >= a && v[b] == 0) b--
+          for (i = a; i <= b; i++) print v[i] }' >"$TMP/beep.pcm" || return 1
+  local expected actual
+  expected="$(awk '$2 == "beep.pcm" { print $1 }' "$ROOT/scripts/checksums.txt")"
+  actual="$(sha256 "$TMP/beep.pcm")"
+  if [ "$actual" != "$expected" ]; then
+    echo "        beep.pcm: sha256 $actual, expected ${expected:-nothing}"
+    return 1
+  fi
+}
+
+if SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE="$TMP/beep.raw" run_for 10 "$BIN/beep" 2>"$TMP/beep.log" | grep -q '^done$' &&
+  check_audio "$TMP/beep.raw" "$TMP/beep.log"; then
+  pass "beep plays the expected samples and exits"
 else
-  fail "beep plays its queue and exits"
+  fail "beep plays the expected samples and exits"
 fi
 
 # A window program that is still running after 3 seconds started fine.
