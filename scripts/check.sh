@@ -121,10 +121,15 @@ else
 fi
 
 # A window program that is still running after 3 seconds started fine.
+# On macOS, SDL makes every window an OpenGL window, and the offscreen
+# driver can only get OpenGL through EGL, which macOS doesn't have. The
+# dummy driver has no OpenGL, so its windows work there.
+video_driver=offscreen
+[ "$(uname -s)" = "Darwin" ] && video_driver=dummy
 check_window() {
   local name="$1" dir="$2"
   local status
-  (cd "$ROOT/examples/$dir" && SDL_VIDEODRIVER=offscreen run_for 3 "$BIN/$name" >"$TMP/$name.log" 2>&1)
+  (cd "$ROOT/examples/$dir" && SDL_VIDEODRIVER="$video_driver" run_for 3 "$BIN/$name" >"$TMP/$name.log" 2>&1)
   status=$?
   if [ "$status" -eq 124 ]; then
     pass "$name opens and keeps running"

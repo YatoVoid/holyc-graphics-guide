@@ -80,7 +80,7 @@ Mesh g_cube;
 Mesh g_pyramid;
 Face g_faces[MAX_FACES];
 I64 g_order[MAX_FACES];
-I64 g_face_count = 0;
+I64 g_face_count;
 
 U0 V3Sub(Vec3 *out, Vec3 *a, Vec3 *b)
 {

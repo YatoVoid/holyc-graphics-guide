@@ -20,7 +20,7 @@ What exists today is listed under [Example programs](examples.md). Below are the
 ## Testing
 
 - [x] CI builds hcc and runs every example on Linux.
-- [ ] macOS CI job.
+- [x] macOS CI job (Apple Silicon).
 - [ ] Pixel checksums for the headless examples, so rendering changes are caught as well as crashes.
 
 ## Tracking hcc

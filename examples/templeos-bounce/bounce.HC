@@ -36,7 +36,9 @@ I64 y[16];
 I64 dx[16];
 I64 dy[16];
 
-U64 g_seed = 1;
+// Seeded in Init rather than here: see "Initialised globals and Main's
+// arguments" in docs/compiler-quirks.md.
+U64 g_seed;
 
 // TempleOS's Rand returns an F64 in [0, 1). hcc has none, so this is a
 // small generator with a fixed seed: every run draws the same pattern.
@@ -53,6 +55,7 @@ U0 Init()
 {
   I64 i;
   F64 angle;
+  g_seed = 1;
   MemSet(x, 0, sizeof(x));
   MemSet(y, 0, sizeof(y));
   for (i = 0; i < 16; i++) {

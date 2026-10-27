@@ -132,6 +132,22 @@ x = MaxI64(0, x);
 g->cam_x = x;
 ```
 
+## Initialised globals and Main's arguments
+
+```holyc
+U64 g_seed = 1;
+
+I32 Main(I32 argc, U8 **argv)
+{
+  "%d\n", argc;   // 1 on Apple Silicon, whatever arguments were passed
+  return 0;
+}
+```
+
+On AArch64 (Apple Silicon), a global with an initialiser that hcc can't place in the data section, such as `I64 g_count = 0;` or `U64 g_seed = 1;`, makes `Main`'s `argc` and `argv` wrong. hcc runs those initialisers in a small `main` before calling your `Main`, and it uses the registers holding `argc` and `argv` to do it. `argc` ends up as the last value stored and `argv` as the global's address, so a program that checks for a flag never sees it, and one that reads `argv[1]` can crash. x86_64 isn't affected. Array initialisers and string pointers (`U32 g_palette[16] = {...}`, `U8 *g_name = "..."`) don't trigger it.
+
+**Workaround:** don't initialise scalar globals where they're declared. Globals start at zero, so `= 0` can just be dropped, and any other starting value can be set at the top of `Main` or in a setup function it calls.
+
 ## One global per declaration
 
 ```holyc
