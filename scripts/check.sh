@@ -67,49 +67,68 @@ else
   fail "hello runs under the JIT"
 fi
 
-# "P6\n<w> <h>\n255\n", then w*h RGB triples.
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d ' ' -f 1
+  else
+    shasum -a 256 "$1" | cut -d ' ' -f 1
+  fi
+}
+
+# "P6\n<w> <h>\n255\n", then w*h RGB triples, and the same pixels as the
+# image recorded in scripts/checksums.txt. After an intended change to
+# what an example draws, look at the new image, then put the printed hash
+# in checksums.txt.
 check_ppm() {
   local file="$1" w="$2" h="$3"
   [ -f "$file" ] || return 1
   [ "$(head -c 2 "$file")" = "P6" ] || return 1
   local header_bytes=$((${#w} + ${#h} + 9))
-  [ "$(wc -c <"$file" | tr -d ' ')" -eq $((header_bytes + w * h * 3)) ]
+  [ "$(wc -c <"$file" | tr -d ' ')" -eq $((header_bytes + w * h * 3)) ] || return 1
+  local name expected actual
+  name="$(basename "$file")"
+  expected="$(awk -v n="$name" '$2 == n { print $1 }' "$ROOT/scripts/checksums.txt")"
+  actual="$(sha256 "$file")"
+  if [ "$actual" != "$expected" ]; then
+    echo "        $name: sha256 $actual, expected ${expected:-nothing}"
+    return 1
+  fi
 }
 
 if run_for 30 "$BIN/draw" "$TMP/draw.ppm" >/dev/null && check_ppm "$TMP/draw.ppm" 320 200; then
-  pass "draw writes a 320x200 image"
+  pass "draw draws the expected 320x200 image"
 else
-  fail "draw writes a 320x200 image"
+  fail "draw draws the expected 320x200 image"
 fi
 
 if run_for 30 "$BIN/text" "$TMP/text.ppm" >/dev/null && check_ppm "$TMP/text.ppm" 320 200; then
-  pass "text writes a 320x200 image"
+  pass "text draws the expected 320x200 image"
 else
-  fail "text writes a 320x200 image"
+  fail "text draws the expected 320x200 image"
 fi
 
 if (cd "$ROOT/examples/image-load" && run_for 30 "$BIN/load" "$TMP/load.ppm" >/dev/null) && check_ppm "$TMP/load.ppm" 240 160; then
-  pass "load reads a PPM and a PNG"
+  pass "load draws a PPM and a PNG as expected"
 else
-  fail "load reads a PPM and a PNG"
+  fail "load draws a PPM and a PNG as expected"
 fi
 
 if run_for 30 "$BIN/tilemap" --ppm "$TMP/tilemap.ppm" >/dev/null && check_ppm "$TMP/tilemap.ppm" 240 160; then
-  pass "tilemap plays two seconds without a window"
+  pass "tilemap plays two seconds to the expected frame"
 else
-  fail "tilemap plays two seconds without a window"
+  fail "tilemap plays two seconds to the expected frame"
 fi
 
 if run_for 30 "$BIN/bounce" --ppm "$TMP/bounce.ppm" >/dev/null && check_ppm "$TMP/bounce.ppm" 640 480; then
-  pass "bounce runs 20000 steps to a file"
+  pass "bounce runs 20000 steps to the expected image"
 else
-  fail "bounce runs 20000 steps to a file"
+  fail "bounce runs 20000 steps to the expected image"
 fi
 
 if run_for 30 "$BIN/cube" --ppm "$TMP/cube.ppm" >/dev/null && check_ppm "$TMP/cube.ppm" 320 200; then
-  pass "cube renders a frame to a file"
+  pass "cube renders the expected frame"
 else
-  fail "cube renders a frame to a file"
+  fail "cube renders the expected frame"
 fi
 
 # The dummy driver plays the queue at real-time speed into nothing, so
