@@ -129,6 +129,8 @@ The planned examples, docs and CI coverage are done. Every hcc bug in [Compiler 
 
 Bug reports, fixes and new examples are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers building, running the checks, updating a recorded checksum after an intended change, and reporting hcc bugs.
 
+## **If you liked this project, you can buy me a coffee. It pays for my sanity, [buymeacoffe](https://buymeacoffee.com/walilambere?status=1)**
+
 ## Credits
 
 HolyC was created by Terry A. Davis for TempleOS. hcc is by James Barford. The guide and examples are MIT-licensed. See [LICENSE](LICENSE).
