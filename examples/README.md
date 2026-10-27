@@ -6,15 +6,15 @@
 | `draw-basic/` | nothing | `hcc -jit draw.HC` (writes `draw.ppm`) |
 | `font-text/` | nothing | `hcc -jit text.HC` (writes `text.ppm`) |
 | `image-load/` | SDL2, SDL2_image | `hcc -jit load.HC` (writes `load.ppm`) |
-| `sprite-demo/` | SDL2 | `hcc -jit sprite.HC` |
+| `sprite-demo/` | SDL2 | `hcc -jit sprite.HC`, or `./sprite --ppm out.ppm` after building |
 | `tilemap/` | SDL2 | `hcc -jit tilemap.HC`, or `./tilemap --ppm out.ppm` after building |
 | `audio/` | SDL2 | `hcc -jit beep.HC` |
 | `gamepad/` | SDL2 | `hcc -jit pad.HC`, or `./pad --ppm out.ppm` after building (virtual controller) |
 | `templeos-bounce/` | SDL2 | `hcc -jit bounce.HC`, or `./bounce --ppm out.ppm` after building |
 | `simple-3d/` | SDL2 | `hcc -jit cube.HC`, or `./cube --ppm out.ppm` after building |
-| `sdl-demo/` | SDL2 | `hcc -jit sdl_example.HC` |
-| `opengl-demo/` | SDL2, OpenGL 3.3 | `hcc -jit opengl_example.HC` |
-| `gl-texture/` | SDL2, OpenGL 3.3 | `hcc -jit texture.HC` |
+| `sdl-demo/` | SDL2 | `hcc -jit sdl_example.HC`, or `./sdl_example --ppm out.ppm` after building |
+| `opengl-demo/` | SDL2, OpenGL 3.3 | `hcc -jit opengl_example.HC`, or `./opengl_example --ppm out.ppm` after building |
+| `gl-texture/` | SDL2, OpenGL 3.3 | `hcc -jit texture.HC`, or `./texture --ppm out.ppm` after building |
 
 Run the commands from inside each folder. To build all of them into `build/bin/`, run `./scripts/build-linux.sh` or `./scripts/build-macos.sh` from the repo root.
 

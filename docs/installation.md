@@ -72,6 +72,6 @@ To build hcc by hand, or to understand what the script does, see [Build hcc from
 ./scripts/check.sh
 ```
 
-This builds all thirteen examples, checks that the ones that don't need a window draw exactly the images recorded in `scripts/checksums.txt`, checks the samples `beep` plays the same way, and starts each window program for three seconds to make sure it doesn't crash. Add `--no-gl` on machines without a working OpenGL driver.
+This builds all thirteen examples, checks that each example's `--ppm` mode draws exactly the image recorded in `scripts/checksums.txt` (the OpenGL ones only when they run on Mesa's llvmpipe; elsewhere that comparison is skipped), checks the samples `beep` plays the same way, and starts each window program for three seconds to make sure it doesn't crash. Add `--no-gl` on machines without a working OpenGL driver.
 
 Next: [Quick start](quickstart.md).

@@ -89,6 +89,7 @@ Reads `bricks.ppm` with the PPM reader in `canvas.HC` and `slime.png` with SDL2_
 
 ```sh
 cd examples/sprite-demo && hcc -jit sprite.HC
+hcc sprite.HC -o sprite && ./sprite --ppm frame.ppm     # no window
 ```
 
 ![sprite-demo](media/sprite.png)
@@ -98,6 +99,8 @@ cd examples/sprite-demo && hcc -jit sprite.HC
 | ++arrow-keys++ or ++w++ ++a++ ++s++ ++d++ | move |
 | left click | release a bat at the cursor |
 | ++escape++ | quit |
+
+`--ppm` plays three scripted seconds with a fixed random seed (it picks up one gem and releases a third bat), then saves the frame. `Update` takes an `Input` instead of reading SDL, which is what makes that possible.
 
 Collect gems. Every third gem releases another bat, and touching a bat resets your score. The window title shows your score and best. [Sprites and 2D](sprites.md) walks through the code.
 
@@ -168,11 +171,14 @@ A cube and a pyramid rendered on the CPU. ++space++ toggles wireframe. **This is
 
 ```sh
 cd examples/sdl-demo && hcc -jit sdl_example.HC
+hcc sdl_example.HC -o sdl_example && ./sdl_example --ppm frame.ppm     # no window
 ```
 
 ![sdl-demo](media/sdl.png)
 
 Uses `SDL_RenderFillRect` and `SDL_RenderDrawLine` directly instead of a canvas. ++arrow-keys++ move the white box, holding the left mouse button drags the orange one, and the green one bounces. This is the quickest route to a working 2D game when you don't need per-pixel control.
+
+`--ppm` makes the same drawing calls on SDL's software renderer, which draws into a surface in memory, and saves the frame three seconds in.
 
 ## opengl-demo
 
@@ -185,6 +191,8 @@ hcc opengl_example.HC -o opengl_example -clibs "-framework OpenGL"
 ![opengl-demo](media/opengl.png)
 
 A spinning, vertex-coloured cube. It prints the OpenGL version and renderer it got, which is the first thing to check when something doesn't draw.
+
+`./opengl_example --ppm frame.ppm` draws the frame at one second into a hidden window and saves it with `glReadPixels` (`GlSavePpm` in `gl.HC`). Different GPUs and drivers round a few edge pixels differently, so `check.sh` only compares the result on Mesa's llvmpipe and skips the comparison elsewhere.
 
 ??? example "opengl_example.HC"
     ```holyc
@@ -202,6 +210,8 @@ hcc texture.HC -o texture -clibs "-framework OpenGL"
 ![gl-texture](media/gl-texture.png)
 
 Draws a scene with the canvas and font every frame, uploads it into an OpenGL texture and shows it on a quad that swings back and forth in 3D. It's the bridge between the software and GPU halves of this guide: anything drawn with `canvas.HC` can end up in a GL scene. [Graphics and rendering](graphics.md#a-canvas-as-an-opengl-texture) covers the byte order, row order and filtering details.
+
+`./texture --ppm frame.ppm` saves the frame at 2.5 seconds the same way as `opengl-demo`, and is checked the same way.
 
 ??? example "texture.HC"
     ```holyc
