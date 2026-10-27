@@ -1,9 +1,14 @@
 // Window, frame loop and input using SDL2's 2D renderer directly.
 // SDL does the drawing here; HolyC only decides what goes where.
 //
-// Arrow keys or WASD move the box. Hold the left mouse button to drag
-// the orange box. Esc or closing the window quits.
+//   ./sdl_example              open a window; arrow keys or WASD move the
+//                              white box, hold the left mouse button to
+//                              drag the orange one, Esc quits
+//   ./sdl_example --ppm a.ppm  draw three seconds in with SDL's software
+//                              renderer and no window, then save the frame
 
+// canvas.HC is only used to write the --ppm file.
+#include "../common/canvas.HC"
 #include "../common/sdl2.HC"
 
 #define WIDTH  800
@@ -11,19 +16,11 @@
 #define BOX    40
 #define SPEED  300
 
-I64 MinI64(I64 a, I64 b)
-{
-  if (a < b)
-    return a;
-  return b;
-}
-
-I64 MaxI64(I64 a, I64 b)
-{
-  if (a > b)
-    return a;
-  return b;
-}
+extern "c" SdlSurface *SDL_CreateRGBSurfaceWithFormat(U32 flags, I32 w, I32 h, I32 depth,
+                                                      U32 format);
+extern "c" U0 *SDL_CreateSoftwareRenderer(SdlSurface *surface);
+extern "c" I32 SDL_RenderReadPixels(U0 *renderer, SdlRect *rect, U32 format, U0 *pixels,
+                                    I32 pitch);
 
 class Box
 {
@@ -53,8 +50,86 @@ U0 Bounce(Box *b, I64 ms)
   b->y = MaxI64(0, MinI64(b->y, HEIGHT - BOX));
 }
 
-I32 Main()
+U0 Draw(U0 *renderer, Box *ball, I64 px, I64 py, I64 drag_x, I64 drag_y)
 {
+  // Clear, draw back to front.
+  SDL_SetRenderDrawColor(renderer, 22, 24, 32, 255);
+  SDL_RenderClear(renderer);
+
+  SDL_SetRenderDrawColor(renderer, 40, 44, 58, 255);
+  for (I64 x = 0; x < WIDTH; x += 50)
+    SDL_RenderDrawLine(renderer, x, 0, x, HEIGHT);
+  for (I64 y = 0; y < HEIGHT; y += 50)
+    SDL_RenderDrawLine(renderer, 0, y, WIDTH, y);
+
+  SDL_SetRenderDrawColor(renderer, 90, 200, 160, 255);
+  FillRect(renderer, ball->x, ball->y, BOX, BOX);
+
+  SDL_SetRenderDrawColor(renderer, 240, 150, 60, 255);
+  FillRect(renderer, drag_x, drag_y, BOX, BOX);
+
+  SDL_SetRenderDrawColor(renderer, 230, 230, 240, 255);
+  FillRect(renderer, px, py, BOX, BOX);
+}
+
+U0 StartBall(Box *ball)
+{
+  ball->x = 100;
+  ball->y = 80;
+  ball->vx = 260;
+  ball->vy = 190;
+}
+
+// The same drawing calls, into a surface in memory instead of a window.
+// Three seconds of the ball in fixed 16 ms steps, the white box held left
+// for one of them.
+I32 RenderToFile(U8 *path)
+{
+  SdlSurface *surface = SDL_CreateRGBSurfaceWithFormat(0, WIDTH, HEIGHT, 32,
+                                                       SDL_PIXELFORMAT_ARGB8888);
+  if (!surface) {
+    "SDL_CreateRGBSurfaceWithFormat failed: %s\n", SDL_GetError();
+    return 1;
+  }
+  U0 *renderer = SDL_CreateSoftwareRenderer(surface);
+  if (!renderer) {
+    "SDL_CreateSoftwareRenderer failed: %s\n", SDL_GetError();
+    SDL_FreeSurface(surface);
+    return 1;
+  }
+
+  I64 px = WIDTH / 2 - BOX / 2, py = HEIGHT / 2 - BOX / 2;
+  Box ball;
+  StartBall(&ball);
+  for (I64 t = 0; t < 3000; t += 16) {
+    if (t < 1000)
+      px -= SPEED * 16 / 1000;
+    Bounce(&ball, 16);
+  }
+  Draw(renderer, &ball, px, py, 600, 300);
+
+  Canvas c;
+  Bool ok = CanvasInit(&c, WIDTH, HEIGHT);
+  if (ok)
+    ok = SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, c.pixels,
+                              WIDTH * sizeof(U32)) == 0;
+  if (ok)
+    ok = CanvasSavePpm(&c, path);
+  if (ok)
+    "wrote %s, ball at (%d, %d)\n", path, ball.x, ball.y;
+  else
+    "could not write %s\n", path;
+  CanvasFree(&c);
+  SDL_DestroyRenderer(renderer);
+  SDL_FreeSurface(surface);
+  return !ok;
+}
+
+I32 Main(I32 argc, U8 **argv)
+{
+  if (argc > 2 && !StrCmp(argv[1], "--ppm"))
+    return RenderToFile(argv[2]);
+
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     "SDL_Init failed: %s\n", SDL_GetError();
     return 1;
@@ -79,10 +154,7 @@ I32 Main()
 
   I64 px = WIDTH / 2 - BOX / 2, py = HEIGHT / 2 - BOX / 2;
   Box ball;
-  ball.x = 100;
-  ball.y = 80;
-  ball.vx = 260;
-  ball.vy = 190;
+  StartBall(&ball);
   I64 drag_x = 600, drag_y = 300;
 
   U32 last = SDL_GetTicks();
@@ -110,26 +182,7 @@ I32 Main()
     }
 
     Bounce(&ball, ms);
-
-    // Draw: clear, draw back to front, present.
-    SDL_SetRenderDrawColor(renderer, 22, 24, 32, 255);
-    SDL_RenderClear(renderer);
-
-    SDL_SetRenderDrawColor(renderer, 40, 44, 58, 255);
-    for (I64 x = 0; x < WIDTH; x += 50)
-      SDL_RenderDrawLine(renderer, x, 0, x, HEIGHT);
-    for (I64 y = 0; y < HEIGHT; y += 50)
-      SDL_RenderDrawLine(renderer, 0, y, WIDTH, y);
-
-    SDL_SetRenderDrawColor(renderer, 90, 200, 160, 255);
-    FillRect(renderer, ball.x, ball.y, BOX, BOX);
-
-    SDL_SetRenderDrawColor(renderer, 240, 150, 60, 255);
-    FillRect(renderer, drag_x, drag_y, BOX, BOX);
-
-    SDL_SetRenderDrawColor(renderer, 230, 230, 240, 255);
-    FillRect(renderer, px, py, BOX, BOX);
-
+    Draw(renderer, &ball, px, py, drag_x, drag_y);
     SDL_RenderPresent(renderer);
   }
 

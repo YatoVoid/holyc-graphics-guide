@@ -4,6 +4,9 @@
 //
 // Linux:  hcc texture.HC -o texture
 // macOS:  hcc texture.HC -o texture -clibs "-framework OpenGL"
+//
+//   ./texture --ppm a.ppm  draw the frame at 2.5 seconds into a hidden
+//                          window and save it
 
 #include "../common/canvas.HC"
 #include "../common/font.HC"
@@ -145,8 +148,38 @@ U0 DrawScene(Canvas *c, I64 ms)
   FontDrawText(c, 8, c->height - 14, clock, Rgb(200, 200, 220));
 }
 
-I32 Main()
+U0 DrawFrame(U32 program, I32 u_angle, I32 u_aspect, U32 vao, U32 texture, Canvas *canvas,
+              I64 ms, I32 fb_w, I32 fb_h)
 {
+  glViewport(0, 0, fb_w, fb_h);
+  DrawScene(canvas, ms);
+  UploadCanvas(texture, canvas);
+
+  F64 t = ms;
+  F64 aspect = fb_w;
+  aspect /= fb_h;
+  // Swing up to about 35 degrees each way, so the back never shows.
+  F32 angle = sin(t / 1600.0) * 0.6;
+  F32 aspect32 = aspect;
+
+  glClearColor(0.08, 0.09, 0.12, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glUseProgram(program);
+  glUniform1f(u_angle, angle);
+  glUniform1f(u_aspect, aspect32);
+  glBindVertexArray(vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+I32 Main(I32 argc, U8 **argv)
+{
+  U8 *ppm_path = NULL;
+  U32 show = SDL_WINDOW_SHOWN;
+  if (argc > 2 && !StrCmp(argv[1], "--ppm")) {
+    ppm_path = argv[2];
+    show = SDL_WINDOW_HIDDEN;
+  }
+
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     "SDL_Init failed: %s\n", SDL_GetError();
     return 1;
@@ -160,7 +193,7 @@ I32 Main()
 
   U0 *window = SDL_CreateWindow("HolyC canvas on OpenGL", SDL_WINDOWPOS_CENTERED,
                                 SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT,
-                                SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+                                SDL_WINDOW_OPENGL | show);
   if (!window) {
     "SDL_CreateWindow failed: %s\n", SDL_GetError();
     SDL_Quit();
@@ -200,31 +233,23 @@ I32 Main()
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, 2 * sizeof(F32));
 
-  while (SdlPumpEvents() && !SdlKeyDown(SC_ESCAPE)) {
-    I32 fb_w, fb_h;
+  I32 status = 0;
+  I32 fb_w, fb_h;
+  if (ppm_path) {
     SDL_GL_GetDrawableSize(window, &fb_w, &fb_h);
-    glViewport(0, 0, fb_w, fb_h);
-
-    I64 ms = SDL_GetTicks();
-    DrawScene(&canvas, ms);
-    UploadCanvas(texture, &canvas);
-
-    F64 t = ms;
-    F64 aspect = fb_w;
-    aspect /= fb_h;
-    // Swing up to about 35 degrees each way, so the back never shows.
-    F32 angle = sin(t / 1600.0) * 0.6;
-    F32 aspect32 = aspect;
-
-    glClearColor(0.08, 0.09, 0.12, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(program);
-    glUniform1f(u_angle, angle);
-    glUniform1f(u_aspect, aspect32);
-    glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    SDL_GL_SwapWindow(window);
+    DrawFrame(program, u_angle, u_aspect, vao, texture, &canvas, 2500, fb_w, fb_h);
+    if (GlSavePpm(ppm_path, fb_w, fb_h)) {
+      "wrote %s\n", ppm_path;
+    } else {
+      "could not write %s\n", ppm_path;
+      status = 1;
+    }
+  } else {
+    while (SdlPumpEvents() && !SdlKeyDown(SC_ESCAPE)) {
+      SDL_GL_GetDrawableSize(window, &fb_w, &fb_h);
+      DrawFrame(program, u_angle, u_aspect, vao, texture, &canvas, SDL_GetTicks(), fb_w, fb_h);
+      SDL_GL_SwapWindow(window);
+    }
   }
 
   glDeleteTextures(1, &texture);
@@ -235,5 +260,5 @@ I32 Main()
   SDL_GL_DeleteContext(context);
   SDL_DestroyWindow(window);
   SDL_Quit();
-  return 0;
+  return status;
 }

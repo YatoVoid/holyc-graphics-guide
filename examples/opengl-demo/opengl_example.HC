@@ -6,6 +6,9 @@
 //
 // Linux:  hcc opengl_example.HC -o opengl_example
 // macOS:  hcc opengl_example.HC -o opengl_example -clibs "-framework OpenGL"
+//
+//   ./opengl_example --ppm a.ppm  draw the frame at one second into a
+//                                 hidden window and save it
 
 #include "../common/sdl2.HC"
 #include "../common/gl.HC"
@@ -161,8 +164,44 @@ U32 LinkProgram(U8 *vertex_src, U8 *fragment_src)
   return program;
 }
 
-I32 Main()
+U0 DrawFrame(U32 program, I32 u_mvp, U32 vao, I64 ms, I32 fb_w, I32 fb_h)
 {
+  F64 proj[16], rot_x[16], rot_y[16], move[16], model[16], mvp[16];
+  F32 mvp32[16];
+
+  glViewport(0, 0, fb_w, fb_h);
+  F64 t = ms;
+  t /= 1000.0;
+  F64 aspect = fb_w;
+  aspect /= fb_h;
+
+  Mat4Perspective(proj, 1.0, aspect, 0.1, 100.0);
+  Mat4RotateY(rot_y, t * 0.8);
+  Mat4RotateX(rot_x, t * 0.5);
+  Mat4Translate(move, 0.0, 0.0, -5.0);
+  Mat4Mul(model, rot_y, rot_x);
+  Mat4Mul(model, move, model);
+  Mat4Mul(mvp, proj, model);
+  for (I64 i = 0; i < 16; i++)
+    mvp32[i] = mvp[i];
+
+  glClearColor(0.08, 0.09, 0.12, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glUseProgram(program);
+  glUniformMatrix4fv(u_mvp, 1, GL_FALSE, mvp32);
+  glBindVertexArray(vao);
+  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+}
+
+I32 Main(I32 argc, U8 **argv)
+{
+  U8 *ppm_path = NULL;
+  U32 show = SDL_WINDOW_SHOWN;
+  if (argc > 2 && !StrCmp(argv[1], "--ppm")) {
+    ppm_path = argv[2];
+    show = SDL_WINDOW_HIDDEN;
+  }
+
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     "SDL_Init failed: %s\n", SDL_GetError();
     return 1;
@@ -178,7 +217,7 @@ I32 Main()
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
   U0 *window = SDL_CreateWindow("HolyC + OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                WIDTH, HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+                                WIDTH, HEIGHT, SDL_WINDOW_OPENGL | show);
   if (!window) {
     "SDL_CreateWindow failed: %s\n", SDL_GetError();
     SDL_Quit();
@@ -221,38 +260,23 @@ I32 Main()
 
   glEnable(GL_DEPTH_TEST);
 
-  F64 proj[16], rot_x[16], rot_y[16], move[16], model[16], mvp[16];
-  F32 mvp32[16];
-
-  while (SdlPumpEvents() && !SdlKeyDown(SC_ESCAPE)) {
-    I32 fb_w, fb_h;
+  I32 status = 0;
+  I32 fb_w, fb_h;
+  if (ppm_path) {
     SDL_GL_GetDrawableSize(window, &fb_w, &fb_h);
-    glViewport(0, 0, fb_w, fb_h);
-
-    I64 ms = SDL_GetTicks();
-    F64 t = ms;
-    t /= 1000.0;
-    F64 aspect = fb_w;
-    aspect /= fb_h;
-
-    Mat4Perspective(proj, 1.0, aspect, 0.1, 100.0);
-    Mat4RotateY(rot_y, t * 0.8);
-    Mat4RotateX(rot_x, t * 0.5);
-    Mat4Translate(move, 0.0, 0.0, -5.0);
-    Mat4Mul(model, rot_y, rot_x);
-    Mat4Mul(model, move, model);
-    Mat4Mul(mvp, proj, model);
-    for (I64 i = 0; i < 16; i++)
-      mvp32[i] = mvp[i];
-
-    glClearColor(0.08, 0.09, 0.12, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(program);
-    glUniformMatrix4fv(u_mvp, 1, GL_FALSE, mvp32);
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-    SDL_GL_SwapWindow(window);
+    DrawFrame(program, u_mvp, vao, 1000, fb_w, fb_h);
+    if (GlSavePpm(ppm_path, fb_w, fb_h)) {
+      "wrote %s\n", ppm_path;
+    } else {
+      "could not write %s\n", ppm_path;
+      status = 1;
+    }
+  } else {
+    while (SdlPumpEvents() && !SdlKeyDown(SC_ESCAPE)) {
+      SDL_GL_GetDrawableSize(window, &fb_w, &fb_h);
+      DrawFrame(program, u_mvp, vao, SDL_GetTicks(), fb_w, fb_h);
+      SDL_GL_SwapWindow(window);
+    }
   }
 
   glDeleteBuffers(1, &ebo);
@@ -262,5 +286,5 @@ I32 Main()
   SDL_GL_DeleteContext(context);
   SDL_DestroyWindow(window);
   SDL_Quit();
-  return 0;
+  return status;
 }

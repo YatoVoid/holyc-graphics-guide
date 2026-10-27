@@ -1,7 +1,11 @@
 // Sprites drawn from ASCII art into a software canvas, shown through SDL.
 //
-// Arrow keys or WASD move the player. Collect gems, avoid bats.
-// Click to release another bat. Esc quits.
+//   ./sprite              open a window; arrow keys or WASD move the
+//                         player, click to release a bat, Esc quits
+//   ./sprite --ppm a.ppm  play three scripted seconds with no window,
+//                         then save that frame
+//
+// Collect gems, avoid bats.
 
 #include "../common/canvas.HC"
 #include "../common/sdl2.HC"
@@ -108,6 +112,13 @@ class Actor
   I64 vx, vy;
 };
 
+class Input
+{
+  I64 dx, dy;
+  I64 mouse_x, mouse_y;
+  Bool clicking;
+};
+
 class Game
 {
   Actor hero;
@@ -171,21 +182,11 @@ Bool Overlaps(Actor *a, Actor *b)
   return TRUE;
 }
 
-U0 MoveHero(Game *g, I64 ms)
+U0 MoveHero(Game *g, Input *in, I64 ms)
 {
-  I64 dx = 0, dy = 0;
-  if (SdlKeyDown(SC_LEFT) || SdlKeyDown(SC_A))
-    dx--;
-  if (SdlKeyDown(SC_RIGHT) || SdlKeyDown(SC_D))
-    dx++;
-  if (SdlKeyDown(SC_UP) || SdlKeyDown(SC_W))
-    dy--;
-  if (SdlKeyDown(SC_DOWN) || SdlKeyDown(SC_S))
-    dy++;
-
   Actor *h = &g->hero;
-  h->x += dx * PLAYER_SPEED * ms;
-  h->y += dy * PLAYER_SPEED * ms;
+  h->x += in->dx * PLAYER_SPEED * ms;
+  h->y += in->dy * PLAYER_SPEED * ms;
   h->x = MaxI64(0, MinI64(h->x, (WIDTH - SPRITE_SIZE) * FP));
   h->y = MaxI64(0, MinI64(h->y, (HEIGHT - SPRITE_SIZE) * FP));
 }
@@ -205,16 +206,14 @@ U0 MoveBat(Actor *b, I64 ms)
   }
 }
 
-U0 Update(Game *g, Screen *s, I64 ms)
+U0 Update(Game *g, Input *in, I64 ms)
 {
   g->clock_ms += ms;
-  MoveHero(g, ms);
+  MoveHero(g, in, ms);
 
-  I64 mx, my;
-  Bool clicking = ScreenMouse(s, &mx, &my);
-  if (clicking && !g->was_clicking)
-    SpawnBat(g, mx - SPRITE_SIZE / 2, my - SPRITE_SIZE / 2);
-  g->was_clicking = clicking;
+  if (in->clicking && !g->was_clicking)
+    SpawnBat(g, in->mouse_x - SPRITE_SIZE / 2, in->mouse_y - SPRITE_SIZE / 2);
+  g->was_clicking = in->clicking;
 
   if (Overlaps(&g->hero, &g->gem)) {
     g->score++;
@@ -239,9 +238,8 @@ U0 Update(Game *g, Screen *s, I64 ms)
   }
 }
 
-U0 Draw(Game *g, Screen *s)
+U0 Draw(Game *g, Input *in, Canvas *c)
 {
-  Canvas *c = &s->canvas;
   CanvasClear(c, Rgb(24, 22, 34));
   for (I64 y = 0; y < HEIGHT; y += 16)
     for (I64 x = (y / 16 % 2) * 16; x < WIDTH; x += 32)
@@ -265,35 +263,102 @@ U0 Draw(Game *g, Screen *s)
   for (I64 i = 0; i < g->score; i++)
     CanvasFillRect(c, 4 + i * 5, 4, 3, 3, Rgb(60, 220, 200));
 
-  I64 mx, my;
-  ScreenMouse(s, &mx, &my);
+  I64 mx = in->mouse_x, my = in->mouse_y;
   CanvasLine(c, mx - 3, my, mx + 3, my, Rgb(255, 255, 255));
   CanvasLine(c, mx, my - 3, mx, my + 3, Rgb(255, 255, 255));
 }
 
-I32 Main()
+U0 ReadInput(Screen *s, Input *in)
+{
+  I64 dx = 0, dy = 0;
+  if (SdlKeyDown(SC_LEFT) || SdlKeyDown(SC_A))
+    dx--;
+  if (SdlKeyDown(SC_RIGHT) || SdlKeyDown(SC_D))
+    dx++;
+  if (SdlKeyDown(SC_UP) || SdlKeyDown(SC_W))
+    dy--;
+  if (SdlKeyDown(SC_DOWN) || SdlKeyDown(SC_S))
+    dy++;
+  I64 mx, my;
+  Bool clicking = ScreenMouse(s, &mx, &my);
+  in->dx = dx;
+  in->dy = dy;
+  in->mouse_x = mx;
+  in->mouse_y = my;
+  in->clicking = clicking;
+}
+
+U0 NewGame(Game *g, U64 seed)
+{
+  g->seed = seed;
+  g->hero.x = (WIDTH / 2) * FP;
+  g->hero.y = (HEIGHT / 2) * FP;
+  PlaceGem(g);
+  SpawnBat(g, 20, 20);
+  SpawnBat(g, WIDTH - 30, HEIGHT - 30);
+}
+
+// A fixed seed and a fixed path: up and left to the first gem, a click
+// that releases a third bat, then down and right. The same frame comes
+// out every time.
+I32 RenderToFile(Game *g, U8 *path)
+{
+  NewGame(g, 1);
+  Input in;
+  MemSet(&in, 0, sizeof(Input));
+  in.mouse_x = 60;
+  in.mouse_y = 100;
+  for (I64 t = 0; t < 3000; t += 16) {
+    in.dx = -1;
+    in.dy = -1;
+    if (t >= 280)
+      in.dx = 0;
+    if (t >= 800) {
+      in.dx = 1;
+      in.dy = 1;
+    }
+    in.clicking = t >= 500 && t < 600;
+    Update(g, &in, 16);
+  }
+
+  Canvas c;
+  if (!CanvasInit(&c, WIDTH, HEIGHT)) {
+    "out of memory\n";
+    return 1;
+  }
+  Draw(g, &in, &c);
+  Bool ok = CanvasSavePpm(&c, path);
+  CanvasFree(&c);
+  if (!ok) {
+    "could not write %s\n", path;
+    return 1;
+  }
+  "wrote %s, score %d, best %d\n", path, g->score, g->best;
+  return 0;
+}
+
+I32 Main(I32 argc, U8 **argv)
 {
   g_hero.rows = g_hero_rows;
   g_bat_up.rows = g_bat_up_rows;
   g_bat_down.rows = g_bat_down_rows;
   g_gem.rows = g_gem_rows;
 
+  Game *g = &g_game;
+  if (argc > 2 && !StrCmp(argv[1], "--ppm"))
+    return RenderToFile(g, argv[2]);
+
   Screen screen;
   if (!ScreenOpen(&screen, "HolyC sprites", WIDTH, HEIGHT, SCALE))
     return 1;
+  NewGame(g, SDL_GetTicks() + 1);
 
-  Game *g = &g_game;
-  g->seed = SDL_GetTicks() + 1;
-  g->hero.x = (WIDTH / 2) * FP;
-  g->hero.y = (HEIGHT / 2) * FP;
-  PlaceGem(g);
-  SpawnBat(g, 20, 20);
-  SpawnBat(g, WIDTH - 30, HEIGHT - 30);
-
+  Input in;
   I64 shown_score = -1;
   while (SdlPumpEvents() && !SdlKeyDown(SC_ESCAPE)) {
-    Update(g, &screen, ScreenFrameMs(&screen));
-    Draw(g, &screen);
+    ReadInput(&screen, &in);
+    Update(g, &in, ScreenFrameMs(&screen));
+    Draw(g, &in, &screen.canvas);
     ScreenPresent(&screen);
 
     if (g->score != shown_score) {

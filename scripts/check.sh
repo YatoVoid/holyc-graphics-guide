@@ -138,6 +138,18 @@ else
   fail "pad draws a virtual controller and sees it unplugged"
 fi
 
+if run_for 30 "$BIN/sprite" --ppm "$TMP/sprite.ppm" | grep -q 'score 1, best 1$' && check_ppm "$TMP/sprite.ppm" 240 160; then
+  pass "sprite plays three scripted seconds to the expected frame"
+else
+  fail "sprite plays three scripted seconds to the expected frame"
+fi
+
+if run_for 30 "$BIN/sdl_example" --ppm "$TMP/sdl_example.ppm" >/dev/null && check_ppm "$TMP/sdl_example.ppm" 800 500; then
+  pass "sdl_example draws the expected frame with SDL's software renderer"
+else
+  fail "sdl_example draws the expected frame with SDL's software renderer"
+fi
+
 # SDL's disk driver plays the queue at real-time speed into a raw file.
 # The file isn't the same from one SDL to the next: SDL2 writes the mono
 # stream beep asked for, SDL3's sdl2-compat writes stereo with both
@@ -206,6 +218,21 @@ check_window sdl_example sdl-demo
 if [ "$RUN_GL" = 1 ]; then
   check_window opengl_example opengl-demo
   check_window texture gl-texture
+  # GPUs and Mesa's drivers each round a few edge pixels differently, so
+  # the recorded frames are llvmpipe's. On any other renderer the check is
+  # skipped, not failed.
+  for name in opengl_example texture; do
+    if ! LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER="$video_driver" run_for 30 "$BIN/$name" --ppm "$TMP/$name.ppm" >"$TMP/$name.ppm.log" 2>&1; then
+      fail "$name draws the expected frame on llvmpipe"
+      sed 's/^/        /' "$TMP/$name.ppm.log"
+    elif ! grep -q 'llvmpipe' "$TMP/$name.ppm.log"; then
+      echo "  skip  $name frame check (not running on llvmpipe)"
+    elif check_ppm "$TMP/$name.ppm" 800 600; then
+      pass "$name draws the expected frame on llvmpipe"
+    else
+      fail "$name draws the expected frame on llvmpipe"
+    fi
+  done
 else
   echo "  skip  opengl_example, texture (--no-gl)"
 fi

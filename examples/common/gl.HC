@@ -37,12 +37,16 @@
 #define GL_CLAMP_TO_EDGE     0x812F
 #define GL_RGBA8             0x8058
 #define GL_BGRA              0x80E1
+#define GL_RGB               0x1907
+#define GL_PACK_ALIGNMENT    0x0D05
 
 extern "c" U8 *glGetString(U32 name);
 extern "c" U0 glViewport(I32 x, I32 y, I32 w, I32 h);
 extern "c" U0 glClearColor(F32 r, F32 g, F32 b, F32 a);
 extern "c" U0 glClear(U32 mask);
 extern "c" U0 glEnable(U32 cap);
+extern "c" U0 glPixelStorei(U32 pname, I32 param);
+extern "c" U0 glReadPixels(I32 x, I32 y, I32 w, I32 h, U32 format, U32 type, U0 *pixels);
 
 extern "c" U0 glGenVertexArrays(I32 n, U32 *arrays);
 extern "c" U0 glBindVertexArray(U32 array);
@@ -83,3 +87,23 @@ extern "c" U0 glDeleteProgram(U32 program);
 extern "c" I32 glGetUniformLocation(U32 program, U8 *name);
 extern "c" U0 glUniform1f(I32 location, F32 value);
 extern "c" U0 glUniformMatrix4fv(I32 location, I32 count, U8 transpose, F32 *value);
+
+// Saves the current framebuffer as a binary PPM. GL's rows start at the
+// bottom and PPM's at the top, so read them one at a time from the end.
+Bool GlSavePpm(U8 *path, I64 w, I64 h)
+{
+  U8 *header = MStrPrint("P6\n%d %d\n255\n", w, h);
+  I64 header_len = StrLen(header);
+  I64 size = header_len + w * h * 3;
+  U8 *file = MAlloc(size);
+  MemCpy(file, header, header_len);
+
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  for (I64 y = 0; y < h; y++)
+    glReadPixels(0, h - 1 - y, w, 1, GL_RGB, GL_UNSIGNED_BYTE, file + header_len + y * w * 3);
+
+  Bool ok = FileWrite(path, file, size, O_CREAT | O_RDWR | O_TRUNC);
+  Free(file);
+  Free(header);
+  return ok;
+}
