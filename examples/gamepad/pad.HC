@@ -1,6 +1,9 @@
 // Shows the state of the first game controller SDL finds: sticks,
 // triggers, d-pad and buttons. Plug a controller in or out while it runs.
-// Esc quits.
+//
+//   ./pad              open a window; Esc quits
+//   ./pad --ppm a.ppm  attach a virtual controller with fixed inputs, save
+//                      what it draws, then unplug and replug it
 
 #include "../common/canvas.HC"
 #include "../common/font.HC"
@@ -114,8 +117,92 @@ U0 Draw(Canvas *c, U0 *pad)
   FontDrawText(c, (c->width - FontTextWidth(msg)) / 2, 76, msg, Rgb(200, 200, 220));
 }
 
-I32 Main()
+// SDL's virtual joysticks, for testing without a controller.
+#define SDL_JOYSTICK_TYPE_GAMECONTROLLER 1
+
+extern "c" I32 SDL_JoystickAttachVirtual(I32 type, I32 naxes, I32 nbuttons, I32 nhats);
+extern "c" I32 SDL_JoystickDetachVirtual(I32 device_index);
+extern "c" U0 *SDL_JoystickOpen(I32 device_index);
+extern "c" U0 SDL_JoystickClose(U0 *joystick);
+extern "c" I32 SDL_JoystickSetVirtualAxis(U0 *joystick, I32 axis, I16 value);
+extern "c" I32 SDL_JoystickSetVirtualButton(U0 *joystick, I32 button, U8 value);
+
+// SDL maps a virtual controller's joystick axis and button n to
+// controller axis and button n, so the PAD_ constants address both.
+I64 AttachVirtualPad()
 {
+  return SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 15, 0);
+}
+
+I32 RenderToFile(U8 *path)
+{
+  if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
+    "SDL_Init failed: %s\n", SDL_GetError();
+    return 1;
+  }
+  I64 index = AttachVirtualPad();
+  U0 *joy = SDL_JoystickOpen(index);
+  U0 *pad = PadFind(NULL);
+  if (index < 0 || !joy || !pad) {
+    "no virtual controller: %s\n", SDL_GetError();
+    return 1;
+  }
+
+  // Set after the controller is open, because SDL can ignore a trigger's
+  // position until it first changes. A virtual trigger's -32768..32767 is
+  // rescaled to the controller's 0..32767, so the ends read 0 and 32767.
+  SDL_JoystickSetVirtualAxis(joy, PAD_AXIS_LEFTX, -20000);
+  SDL_JoystickSetVirtualAxis(joy, PAD_AXIS_LEFTY, 10000);
+  SDL_JoystickSetVirtualAxis(joy, PAD_AXIS_RIGHTX, 32767);
+  SDL_JoystickSetVirtualAxis(joy, PAD_AXIS_RIGHTY, -32768);
+  SDL_JoystickSetVirtualAxis(joy, PAD_AXIS_TRIGGERLEFT, -32768);
+  SDL_JoystickSetVirtualAxis(joy, PAD_AXIS_TRIGGERRIGHT, 32767);
+  SDL_JoystickSetVirtualButton(joy, PAD_A, 1);
+  SDL_JoystickSetVirtualButton(joy, PAD_Y, 1);
+  SDL_JoystickSetVirtualButton(joy, PAD_DPAD_LEFT, 1);
+  SDL_JoystickSetVirtualButton(joy, PAD_START, 1);
+  SDL_JoystickSetVirtualButton(joy, PAD_LEFTSHOULDER, 1);
+  SdlPumpEvents();
+
+  Canvas c;
+  if (!CanvasInit(&c, WIDTH, HEIGHT)) {
+    "out of memory\n";
+    return 1;
+  }
+  Draw(&c, pad);
+  Bool ok = CanvasSavePpm(&c, path);
+  CanvasFree(&c);
+  if (!ok) {
+    "could not write %s\n", path;
+    return 1;
+  }
+  "wrote %s\n", path;
+
+  SDL_JoystickClose(joy);
+  SDL_JoystickDetachVirtual(index);
+  SdlPumpEvents();
+  pad = PadFind(pad);
+  if (pad) {
+    "still connected after unplugging\n";
+    return 1;
+  }
+  AttachVirtualPad();
+  SdlPumpEvents();
+  pad = PadFind(pad);
+  if (!pad) {
+    "not found after plugging back in\n";
+    return 1;
+  }
+  "unplugged and found again\n";
+  SDL_GameControllerClose(pad);
+  return 0;
+}
+
+I32 Main(I32 argc, U8 **argv)
+{
+  if (argc > 2 && !StrCmp(argv[1], "--ppm"))
+    return RenderToFile(argv[2]);
+
   Screen screen;
   if (!ScreenOpen(&screen, "HolyC gamepad", WIDTH, HEIGHT, SCALE))
     return 1;

@@ -132,6 +132,12 @@ else
   fail "cube renders the expected frame"
 fi
 
+if run_for 30 "$BIN/pad" --ppm "$TMP/pad.ppm" | grep -q '^unplugged and found again$' && check_ppm "$TMP/pad.ppm" 240 160; then
+  pass "pad draws a virtual controller and sees it unplugged"
+else
+  fail "pad draws a virtual controller and sees it unplugged"
+fi
+
 # The dummy driver plays the queue at real-time speed into nothing, so
 # this also checks that the program waits for its sounds and then exits.
 if SDL_AUDIODRIVER=dummy run_for 10 "$BIN/beep" 2>&1 | grep -q '^done$'; then

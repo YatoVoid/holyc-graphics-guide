@@ -135,11 +135,12 @@ Plays a short tune, a coin pickup and a falling three-note "hurt" sound, then ex
 
 ```sh
 cd examples/gamepad && hcc -jit pad.HC
+hcc pad.HC -o pad && ./pad --ppm frame.ppm     # virtual controller, no window
 ```
 
 ![gamepad](media/gamepad.png)
 
-Draws the first connected controller: bumpers and trigger bars at the top, both sticks, the d-pad, Back/Guide/Start and the face buttons, with raw stick values along the bottom. With no controller it says so, and it picks one up when it's plugged in. ++escape++ quits. [Game controllers](graphics.md#game-controllers) covers the API.
+Draws the first connected controller: bumpers and trigger bars at the top, both sticks, the d-pad, Back/Guide/Start and the face buttons, with raw stick values along the bottom. With no controller it says so, and it picks one up when it's plugged in. ++escape++ quits. `--ppm` needs no hardware: it attaches one of SDL's virtual controllers, sets its sticks and buttons, saves the frame, then unplugs and replugs it, which is how `check.sh` tests it. [Game controllers](graphics.md#game-controllers) covers the API.
 
 ## templeos-bounce
 
