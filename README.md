@@ -78,7 +78,7 @@ So a HolyC game is HolyC for the logic, maths and drawing code, SDL2 for the win
 
 ## Status
 
-A learning resource and starting point, tested against hcc 0.0.15-beta (commit `06ca611`) on Linux x86_64. CI builds hcc and runs every example on Ubuntu, and every example except the two OpenGL ones on macOS on Apple Silicon. Intel Macs aren't tested. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/) for what's planned.
+A learning resource and starting point, tested against hcc 0.0.15-beta (commit `06ca611`) on Linux x86_64. CI builds hcc and runs every example on Ubuntu, and every example except the two OpenGL ones on macOS, on both Apple Silicon and Intel. See the [roadmap](https://yatovoid.github.io/holyc-graphics-guide/roadmap/) for what's planned.
 
 ## Credits
 

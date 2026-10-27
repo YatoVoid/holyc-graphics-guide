@@ -40,8 +40,7 @@ hcc turns HolyC into x86_64 or AArch64 assembly, then calls the system C compile
 | Platform | Status |
 |---|---|
 | Linux x86_64 | Works. All examples tested here. |
-| macOS on Apple Silicon | Works. CI builds every example and runs all but the two OpenGL ones. |
-| macOS on Intel | Supported by hcc upstream, but not tested here. |
+| macOS (Apple Silicon and Intel) | Works. CI builds every example on both and runs all but the two OpenGL ones. |
 | Windows | Only through WSL2. hcc has no Windows backend, so it can't produce `.exe` files. Windows 11 shows WSL2 windows through WSLg. |
 
 ## Where to start
